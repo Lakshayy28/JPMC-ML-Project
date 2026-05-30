@@ -1,0 +1,16 @@
+dataset:
+  raw_root: data/external/AMLSim
+  processed_root: data/processed/amlsim
+  sample_preferred: true
+
+enrichment:
+  seed: 17
+  device_pool_size: 16
+  suspicious_device_pool_size: 4
+  ip_pool_size: 64
+  suspicious_ip_pool_size: 8
+  merchant_pool_size: 24
+
+models:
+  random_state: 42
+  test_size: 0.25

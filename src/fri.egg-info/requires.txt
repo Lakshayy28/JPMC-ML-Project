@@ -1,0 +1,6 @@
+pandas>=2.2
+PyYAML>=6.0
+scikit-learn>=1.5
+
+[dev]
+pytest>=8.2

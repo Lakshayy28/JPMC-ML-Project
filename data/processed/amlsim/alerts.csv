@@ -1,0 +1,3 @@
+alert_id,alert_type,account_id,party_id,event_value,is_sar,layout_name
+0,cycle,25,C_25,20170218,True,sample_outputs
+1,cycle,24,C_24,20170128,True,sample_outputs

@@ -1,0 +1,16 @@
+pyproject.toml
+docs/Documentation_Roadmap.md
+src/fri/__init__.py
+src/fri/config.py
+src/fri.egg-info/PKG-INFO
+src/fri.egg-info/SOURCES.txt
+src/fri.egg-info/dependency_links.txt
+src/fri.egg-info/requires.txt
+src/fri.egg-info/top_level.txt
+src/fri/data/__init__.py
+src/fri/data/canonical.py
+src/fri/data/loaders.py
+src/fri/features/__init__.py
+src/fri/features/baseline.py
+src/fri/models/__init__.py
+src/fri/models/baseline.py

@@ -1,0 +1,204 @@
+Metadata-Version: 2.4
+Name: fri
+Version: 0.1.0
+Summary: Financial Risk Intelligence platform scaffold built on IBM AMLSim.
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+Requires-Dist: pandas>=2.2
+Requires-Dist: PyYAML>=6.0
+Requires-Dist: scikit-learn>=1.5
+Provides-Extra: dev
+Requires-Dist: pytest>=8.2; extra == "dev"
+
+# Financial Risk Intelligence Documentation Roadmap
+
+## Purpose
+
+This document translates the master guide into the documentation set needed to execute the project as an engineering program rather than as a loose study plan.
+
+## Roadmap Analysis
+
+The roadmap is strong, but it spans five different concerns that need explicit documentation ownership:
+
+1. Product and governance
+2. Data and fraud domain understanding
+3. Model and graph intelligence development
+4. Platform, deployment and operations
+5. Analyst experience and portfolio packaging
+
+The highest-risk execution gaps are not model selection. They are:
+
+- unclear problem framing and success metrics
+- undocumented data contracts and validation rules
+- no traceability between business objectives and model outputs
+- no architectural baseline for how graph, temporal and API layers fit together
+- no operational documents for deployment, monitoring and drift response
+
+## Documentation Strategy
+
+Use three levels of documentation:
+
+1. Foundation docs
+   - define what is being built and why
+2. Build docs
+   - specify how each subsystem works
+3. Run docs
+   - define how the platform is deployed, monitored and operated
+
+## Required Documentation Set
+
+| Phase | Document | Purpose | Priority |
+| --- | --- | --- | --- |
+| 0 | PRD | Establish scope, users, workflows, success metrics and constraints | Critical |
+| 0 | Requirements Traceability Matrix | Tie each requirement to implementation and validation | Critical |
+| 0 | Architecture Vision | Define system boundaries, layers, interfaces and deployment assumptions | Critical |
+| 1 | Fraud Taxonomy | Standardize fraud typologies and investigation vocabulary | Critical |
+| 1 | Dataset Assessment | Compare candidate datasets, fields, gaps and suitability | Critical |
+| 1 | Entity Relationship Mapping | Normalize business entities and their relationships before graph construction | Critical |
+| 2 | Architecture Diagram Pack | Capture context, container, data flow, sequence, deployment and ER views | Critical |
+| 3 | Data Dictionary | Define schema, data types, null rules and business meaning | Critical |
+| 3 | EDA Report | Document class imbalance, outliers, leakage risks and quality issues | Critical |
+| 3 | Data Validation Specification | Define validation checks, thresholds, owners and failure handling | Critical |
+| 4 | Feature Store Design | Describe offline and online feature contracts and lineage | Critical |
+| 4 | Feature Documentation | Define each feature, window, formula and leakage controls | Critical |
+| 5 | Model Development Plan | Define baselines, splits, metrics and experiment strategy | Critical |
+| 5 | Evaluation Report | Compare model families and document tradeoffs | Critical |
+| 5 | Feature Importance Report | Provide model interpretation for baseline models | High |
+| 6 | Graph Schema Specification | Define nodes, edges, identifiers and graph construction rules | Critical |
+| 6 | Graph Analytics Report | Document community detection, ring patterns and cluster findings | High |
+| 7 | Embedding Pipeline Specification | Define node embedding generation, storage and reuse | Critical |
+| 7 | Graph Feature Service Spec | Define graph-derived feature computation for training and inference | High |
+| 7 | Performance Comparison Report | Compare classical, hybrid and graph ML systems | Critical |
+| 8 | Temporal Feature Service Spec | Define rolling windows, drift signals and behaviour baselines | Critical |
+| 8 | Drift Detection Engine Spec | Document rules, thresholds and action paths for behaviour change | High |
+| 8 | Behaviour Analytics Dashboard Spec | Define analyst views for temporal monitoring | High |
+| 9 | Explainability Service Spec | Define reason codes, SHAP outputs and explanation APIs | Critical |
+| 9 | Risk Explanation Dashboard Spec | Define how analysts consume model explanations | High |
+| 10 | MLOps Pipeline Spec | Document experiments, training orchestration and reproducibility | Critical |
+| 10 | Model Lifecycle Documentation | Define promotion, rollback, approval and registry rules | Critical |
+| 11 | API Specification | Define endpoints, request and response schemas, auth and SLAs | Critical |
+| 11 | Deployment Guide | Document local, staging and production deployment steps | Critical |
+| 12 | Monitoring Plan | Define data, feature, prediction and latency monitoring | Critical |
+| 12 | Alerting Framework | Define thresholds, on-call actions and escalation paths | Critical |
+| 13 | Dashboard Product Spec | Define dashboard personas, views and workflows | Critical |
+| Final | Demo Narrative | Provide end-to-end story for reviewers and interviews | High |
+| Final | Resume Project Entry | Distill project into resume-ready impact statements | Medium |
+| Final | Interview Story Bank | Prepare technical, business and tradeoff narratives | Medium |
+
+## Recommended Delivery Order
+
+### Stage 1: Foundation
+
+- PRD
+- Requirements Traceability Matrix
+- Architecture Vision
+- Fraud Taxonomy
+- Dataset Assessment
+- Entity Relationship Mapping
+
+### Stage 2: Data and Modelling
+
+- Data Dictionary
+- EDA Report
+- Data Validation Specification
+- Feature Store Design
+- Feature Documentation
+- Model Development Plan
+
+### Stage 3: Intelligence Extensions
+
+- Graph Schema Specification
+- Graph Analytics Report
+- Embedding Pipeline Specification
+- Temporal Feature Service Spec
+- Explainability Service Spec
+
+### Stage 4: Productionization
+
+- MLOps Pipeline Spec
+- API Specification
+- Deployment Guide
+- Monitoring Plan
+- Alerting Framework
+
+### Stage 5: Consumption and Portfolio
+
+- Dashboard Product Spec
+- Demo Narrative
+- Resume Project Entry
+- Interview Story Bank
+
+## Immediate Deliverables For This Repository
+
+The first documents to complete are:
+
+1. [phase-0/PRD.md](phase-0/PRD.md)
+2. [phase-0/Requirements_Traceability_Matrix.md](phase-0/Requirements_Traceability_Matrix.md)
+3. [phase-0/Architecture_Vision.md](phase-0/Architecture_Vision.md)
+
+These create the baseline needed before building datasets, schemas, features or APIs.
+
+## Suggested Repository Layout
+
+```text
+docs/
+  Documentation_Roadmap.md
+  phase-0/
+    PRD.md
+    Requirements_Traceability_Matrix.md
+    Architecture_Vision.md
+  phase-1/
+    Fraud_Taxonomy.md
+    Dataset_Assessment.md
+    Entity_Relationship_Mapping.md
+  phase-3/
+    Data_Dictionary.md
+    EDA_Report.md
+    Data_Validation_Spec.md
+  phase-4/
+    Feature_Store_Design.md
+    Feature_Documentation.md
+  phase-5/
+    Model_Development_Plan.md
+    Evaluation_Report.md
+  phase-6/
+    Graph_Schema_Specification.md
+    Graph_Analytics_Report.md
+  phase-7/
+    Embedding_Pipeline_Spec.md
+    Graph_Feature_Service_Spec.md
+  phase-8/
+    Temporal_Feature_Service_Spec.md
+    Drift_Detection_Engine_Spec.md
+  phase-9/
+    Explainability_Service_Spec.md
+  phase-10/
+    MLOps_Pipeline_Spec.md
+    Model_Lifecycle_Documentation.md
+  phase-11/
+    API_Specification.md
+    Deployment_Guide.md
+  phase-12/
+    Monitoring_Plan.md
+    Alerting_Framework.md
+  phase-13/
+    Dashboard_Product_Spec.md
+  final/
+    Demo_Narrative.md
+    Resume_Project_Entry.md
+    Interview_Story_Bank.md
+```
+
+## Definition Of Done For Project Documentation
+
+A project document is complete when it:
+
+- states owner, objective and scope
+- defines assumptions and open questions
+- identifies dependencies on datasets, models or services
+- includes measurable acceptance criteria
+- can be used directly by implementation or review work
+
+## Next Authoring Priority
+
+After the phase-0 documents, the next best investment is phase 1 domain documentation, especially the fraud taxonomy and dataset assessment, because they directly influence entity design, feature engineering and graph construction.

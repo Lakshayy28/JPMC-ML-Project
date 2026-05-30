@@ -1,0 +1,15 @@
+device_id,shared_account_count,source_type,device_family
+device_001,3,derived,001
+device_002,3,derived,002
+device_003,2,derived,003
+device_004,3,derived,004
+device_006,2,derived,006
+device_007,1,derived,007
+device_008,3,derived,008
+device_009,2,derived,009
+device_010,1,derived,010
+device_011,4,derived,011
+device_012,1,derived,012
+device_013,2,derived,013
+device_014,2,derived,014
+device_015,1,derived,015
