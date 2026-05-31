@@ -11,6 +11,7 @@ def train_graph_node_baselines(
     label_column: str = "is_fraud",
     random_state: int = 42,
     test_size: float = 0.25,
+    verbose: bool = False,
 ) -> dict[str, dict[str, float | int | None]]:
     if label_column not in node_features.columns:
         raise KeyError(f"Expected label column '{label_column}' in node feature frame")
@@ -25,4 +26,6 @@ def train_graph_node_baselines(
         id_columns=tuple(drop_columns),
         random_state=random_state,
         test_size=test_size,
+        verbose=verbose,
+        run_label="graph_classical",
     )

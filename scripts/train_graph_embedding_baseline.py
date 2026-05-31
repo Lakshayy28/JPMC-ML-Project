@@ -16,9 +16,16 @@ from fri.models.graph_embedding import train_embedding_and_combined_baselines
 
 
 def main() -> None:
+    print("--> Loading graph embedding baseline settings...", flush=True)
     settings = load_settings()
+
+    print(f"--> Loading archive graph data from: {settings.graph.archive_sample}", flush=True)
     archive_data = load_archive_graph_data(settings.graph.archive_sample)
+
+    print("--> Building archive transaction graph...", flush=True)
     graph = build_archive_transaction_graph(archive_data.nodes, archive_data.transactions)
+
+    print("--> Generating graph embeddings and combined feature bundle...", flush=True)
     feature_bundle = build_graph_feature_bundle(
         graph,
         include_communities=settings.graph.community_detection,
@@ -26,10 +33,13 @@ def main() -> None:
         embedding_dimensions=settings.graph.embedding_dimensions,
         embedding_random_state=settings.models.random_state,
     )
+
+    print("--> Training graph embedding baseline estimators...", flush=True)
     metrics = train_embedding_and_combined_baselines(
         feature_bundle,
         random_state=settings.models.random_state,
         test_size=settings.models.test_size,
+        verbose=True,
     )
 
     output_dir = settings.graph.output_root
@@ -40,8 +50,8 @@ def main() -> None:
     metrics_path.write_text(json.dumps(metrics, indent=2), encoding="utf-8")
     feature_bundle["embeddings"].to_csv(embeddings_path, index=False)
 
-    print(f"Wrote graph embedding metrics to: {metrics_path}")
-    print(f"Wrote graph node embeddings to: {embeddings_path}")
+    print(f"[SUCCESS] Wrote execution metrics output to: {metrics_path}", flush=True)
+    print(f"[SUCCESS] Wrote graph node embeddings to: {embeddings_path}", flush=True)
     print(json.dumps(metrics, indent=2))
 
 

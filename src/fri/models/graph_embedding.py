@@ -11,6 +11,7 @@ def train_embedding_and_combined_baselines(
     label_column: str = "is_fraud",
     random_state: int = 42,
     test_size: float = 0.25,
+    verbose: bool = False,
 ) -> dict[str, dict[str, dict[str, float | int | None]]]:
     node_features = feature_bundle["node_features"]
     embeddings = feature_bundle["embeddings"]
@@ -31,6 +32,8 @@ def train_embedding_and_combined_baselines(
             id_columns=("node_id", label_column),
             random_state=random_state,
             test_size=test_size,
+            verbose=verbose,
+            run_label="embedding_only",
         ),
         "combined_graph_features_and_embeddings": train_binary_models(
             combined_frame,
@@ -38,5 +41,7 @@ def train_embedding_and_combined_baselines(
             id_columns=("node_id", label_column, "fraud_step"),
             random_state=random_state,
             test_size=test_size,
+            verbose=verbose,
+            run_label="combined_graph_features_and_embeddings",
         ),
     }

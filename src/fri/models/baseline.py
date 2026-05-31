@@ -62,6 +62,10 @@ def _metric_or_none(metric_fn, y_true, y_score_or_pred):
         return None
 
 
+def _format_metric(metric_value: float | None) -> str:
+    return "n/a" if metric_value is None else f"{metric_value:.4f}"
+
+
 def train_binary_models(
     feature_frame: pd.DataFrame,
     *,
@@ -69,6 +73,8 @@ def train_binary_models(
     id_columns: tuple[str, ...] = (),
     random_state: int = 42,
     test_size: float = 0.25,
+    verbose: bool = False,
+    run_label: str | None = None,
 ) -> dict[str, dict[str, float | int | None]]:
     if feature_frame[target_column].nunique() < 2:
         raise ValueError("At least two label classes are required to train a binary model.")
@@ -91,6 +97,10 @@ def train_binary_models(
 
     results: dict[str, dict[str, float | int | None]] = {}
     for model_name, estimator in estimators.items():
+        model_display_name = f"{run_label}/{model_name}" if run_label else model_name
+        if verbose:
+            print(f"--> Training and evaluating baseline estimator: {model_display_name}...", flush=True)
+
         pipeline = Pipeline(steps=[("preprocessor", preprocessor), ("model", estimator)])
         pipeline.fit(x_train, y_train)
         predictions = pipeline.predict(x_test)
@@ -108,6 +118,17 @@ def train_binary_models(
         )
         results[model_name] = asdict(result)
 
+        if verbose:
+            print(
+                f"[DONE] {model_display_name}: "
+                f"Precision {_format_metric(result.precision)} | "
+                f"Recall {_format_metric(result.recall)} | "
+                f"F1 {_format_metric(result.f1)} | "
+                f"PR-AUC {_format_metric(result.average_precision)} | "
+                f"ROC-AUC {_format_metric(result.roc_auc)}",
+                flush=True,
+            )
+
     return results
 
 
@@ -116,6 +137,7 @@ def train_all_baselines(
     *,
     random_state: int = 42,
     test_size: float = 0.25,
+    verbose: bool = False,
 ) -> dict[str, dict[str, dict[str, float | int | None]]]:
     return {
         "transaction": train_binary_models(
@@ -123,11 +145,15 @@ def train_all_baselines(
             id_columns=("transaction_id", "source_account_id", "destination_account_id", "label_source"),
             random_state=random_state,
             test_size=test_size,
+            verbose=verbose,
+            run_label="transaction",
         ),
         "party": train_binary_models(
             feature_sets["party"],
             id_columns=("party_id",),
             random_state=random_state,
             test_size=test_size,
+            verbose=verbose,
+            run_label="party",
         ),
     }

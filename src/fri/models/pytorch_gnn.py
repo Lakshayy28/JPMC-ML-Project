@@ -513,6 +513,7 @@ def train_pyg_minibatch(
 
     for epoch in range(1, epochs + 1):
         model.train()
+        last_batch_loss = 0.0
         for batch in train_loader:
             optimizer.zero_grad(set_to_none=True)
             batch = batch.to(resolved_device, non_blocking=True)
@@ -522,6 +523,7 @@ def train_pyg_minibatch(
             loss = criterion(logits, labels)
             loss.backward()
             optimizer.step()
+            last_batch_loss = float(loss.item())
 
         val_labels, val_probabilities, _, val_loss = _evaluate_minibatch(
             model,
@@ -542,6 +544,15 @@ def train_pyg_minibatch(
             patience_counter = 0
         else:
             patience_counter += 1
+
+        if epoch % 10 == 0 or epoch == 1:
+            print(
+                f"[GNN Epoch {epoch:03d}/{epochs}] "
+                f"Loss: {last_batch_loss:.4f} | "
+                f"Val Selection Score: {selection_score:.4f} | "
+                f"Patience Counter: {patience_counter}/{patience}",
+                flush=True,
+            )
 
         if patience_counter >= patience:
             break
