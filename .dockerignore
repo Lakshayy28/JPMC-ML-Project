@@ -1,0 +1,11 @@
+.git
+.pytest_cache
+.venv
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.DS_Store
+docs
+tests
+src/fri.egg-info
