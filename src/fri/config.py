@@ -33,6 +33,14 @@ class ModelSettings:
 
 
 @dataclass(frozen=True)
+class TemporalSettings:
+    windows: tuple[int, ...] = (1, 7, 30)
+    recent_window: int = 7
+    baseline_window: int = 30
+    drift_top_k: int = 10
+
+
+@dataclass(frozen=True)
 class GraphSettings:
     archive_sample: Path
     output_root: Path
@@ -42,11 +50,24 @@ class GraphSettings:
 
 
 @dataclass(frozen=True)
+class GNNSettings:
+    feature_source: str = "combined"
+    hidden_dim: int = 64
+    dropout: float = 0.3
+    learning_rate: float = 0.01
+    weight_decay: float = 0.0005
+    epochs: int = 120
+    patience: int = 20
+
+
+@dataclass(frozen=True)
 class Settings:
     dataset: DatasetSettings
     enrichment: EnrichmentSettings
     models: ModelSettings
+    temporal: TemporalSettings
     graph: GraphSettings
+    gnn: GNNSettings
 
 
 def _resolve_path(raw_path: str | Path) -> Path:
@@ -64,7 +85,9 @@ def load_settings(config_path: str | Path | None = None) -> Settings:
     dataset_payload = payload.get("dataset", {})
     enrichment_payload = payload.get("enrichment", {})
     model_payload = payload.get("models", {})
+    temporal_payload = payload.get("temporal", {})
     graph_payload = payload.get("graph", {})
+    gnn_payload = payload.get("gnn", {})
 
     return Settings(
         dataset=DatasetSettings(
@@ -84,6 +107,12 @@ def load_settings(config_path: str | Path | None = None) -> Settings:
             random_state=int(model_payload.get("random_state", 42)),
             test_size=float(model_payload.get("test_size", 0.25)),
         ),
+        temporal=TemporalSettings(
+            windows=tuple(int(value) for value in temporal_payload.get("windows", [1, 7, 30])),
+            recent_window=int(temporal_payload.get("recent_window", 7)),
+            baseline_window=int(temporal_payload.get("baseline_window", 30)),
+            drift_top_k=int(temporal_payload.get("drift_top_k", 10)),
+        ),
         graph=GraphSettings(
             archive_sample=_resolve_path(
                 graph_payload.get("archive_sample", "data/external/AMLSim/sample/20K_fanin200cycle200.tgz")
@@ -92,5 +121,14 @@ def load_settings(config_path: str | Path | None = None) -> Settings:
             community_detection=bool(graph_payload.get("community_detection", True)),
             community_seed=int(graph_payload.get("community_seed", 42)),
             embedding_dimensions=int(graph_payload.get("embedding_dimensions", 16)),
+        ),
+        gnn=GNNSettings(
+            feature_source=str(gnn_payload.get("feature_source", "combined")),
+            hidden_dim=int(gnn_payload.get("hidden_dim", 64)),
+            dropout=float(gnn_payload.get("dropout", 0.3)),
+            learning_rate=float(gnn_payload.get("learning_rate", 0.01)),
+            weight_decay=float(gnn_payload.get("weight_decay", 0.0005)),
+            epochs=int(gnn_payload.get("epochs", 120)),
+            patience=int(gnn_payload.get("patience", 20)),
         ),
     )

@@ -15,9 +15,24 @@ models:
   random_state: 42
   test_size: 0.25
 
+temporal:
+  windows: [1, 7, 30]
+  recent_window: 7
+  baseline_window: 30
+  drift_top_k: 10
+
 graph:
   archive_sample: data/external/AMLSim/sample/20K_fanin200cycle200.tgz
   output_root: artifacts/graph
   community_detection: true
   community_seed: 42
   embedding_dimensions: 16
+
+gnn:
+  feature_source: combined
+  hidden_dim: 64
+  dropout: 0.3
+  learning_rate: 0.01
+  weight_decay: 0.0005
+  epochs: 120
+  patience: 20

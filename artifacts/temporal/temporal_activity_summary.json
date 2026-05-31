@@ -1,0 +1,560 @@
+{
+  "step_range": {
+    "min": 1,
+    "max": 49
+  },
+  "transaction_count": 133,
+  "party_count": 30,
+  "activity_by_step": [
+    {
+      "event_step": 1,
+      "transaction_count": 2,
+      "alert_related_count": 1,
+      "cash_count": 1,
+      "amount_total": 224.92000000000002,
+      "alert_related_rate": 0.5,
+      "cash_rate": 0.5
+    },
+    {
+      "event_step": 2,
+      "transaction_count": 7,
+      "alert_related_count": 1,
+      "cash_count": 6,
+      "amount_total": 568.0,
+      "alert_related_rate": 0.14285714285714285,
+      "cash_rate": 0.8571428571428571
+    },
+    {
+      "event_step": 3,
+      "transaction_count": 4,
+      "alert_related_count": 1,
+      "cash_count": 0,
+      "amount_total": 593.93,
+      "alert_related_rate": 0.25,
+      "cash_rate": 0.0
+    },
+    {
+      "event_step": 4,
+      "transaction_count": 3,
+      "alert_related_count": 0,
+      "cash_count": 3,
+      "amount_total": 154.22,
+      "alert_related_rate": 0.0,
+      "cash_rate": 1.0
+    },
+    {
+      "event_step": 5,
+      "transaction_count": 3,
+      "alert_related_count": 0,
+      "cash_count": 3,
+      "amount_total": 234.82999999999998,
+      "alert_related_rate": 0.0,
+      "cash_rate": 1.0
+    },
+    {
+      "event_step": 6,
+      "transaction_count": 2,
+      "alert_related_count": 1,
+      "cash_count": 1,
+      "amount_total": 159.71,
+      "alert_related_rate": 0.5,
+      "cash_rate": 0.5
+    },
+    {
+      "event_step": 8,
+      "transaction_count": 5,
+      "alert_related_count": 1,
+      "cash_count": 3,
+      "amount_total": 569.33,
+      "alert_related_rate": 0.2,
+      "cash_rate": 0.6
+    },
+    {
+      "event_step": 9,
+      "transaction_count": 2,
+      "alert_related_count": 0,
+      "cash_count": 2,
+      "amount_total": 77.42,
+      "alert_related_rate": 0.0,
+      "cash_rate": 1.0
+    },
+    {
+      "event_step": 11,
+      "transaction_count": 3,
+      "alert_related_count": 0,
+      "cash_count": 1,
+      "amount_total": 367.70000000000005,
+      "alert_related_rate": 0.0,
+      "cash_rate": 0.3333333333333333
+    },
+    {
+      "event_step": 12,
+      "transaction_count": 7,
+      "alert_related_count": 0,
+      "cash_count": 6,
+      "amount_total": 466.19,
+      "alert_related_rate": 0.0,
+      "cash_rate": 0.8571428571428571
+    },
+    {
+      "event_step": 13,
+      "transaction_count": 2,
+      "alert_related_count": 0,
+      "cash_count": 0,
+      "amount_total": 300.63,
+      "alert_related_rate": 0.0,
+      "cash_rate": 0.0
+    },
+    {
+      "event_step": 14,
+      "transaction_count": 4,
+      "alert_related_count": 1,
+      "cash_count": 3,
+      "amount_total": 288.25,
+      "alert_related_rate": 0.25,
+      "cash_rate": 0.75
+    },
+    {
+      "event_step": 15,
+      "transaction_count": 1,
+      "alert_related_count": 0,
+      "cash_count": 1,
+      "amount_total": 13.03,
+      "alert_related_rate": 0.0,
+      "cash_rate": 1.0
+    },
+    {
+      "event_step": 16,
+      "transaction_count": 1,
+      "alert_related_count": 0,
+      "cash_count": 1,
+      "amount_total": 62.44,
+      "alert_related_rate": 0.0,
+      "cash_rate": 1.0
+    },
+    {
+      "event_step": 18,
+      "transaction_count": 4,
+      "alert_related_count": 0,
+      "cash_count": 3,
+      "amount_total": 381.06,
+      "alert_related_rate": 0.0,
+      "cash_rate": 0.75
+    },
+    {
+      "event_step": 19,
+      "transaction_count": 2,
+      "alert_related_count": 0,
+      "cash_count": 2,
+      "amount_total": 129.64000000000001,
+      "alert_related_rate": 0.0,
+      "cash_rate": 1.0
+    },
+    {
+      "event_step": 20,
+      "transaction_count": 3,
+      "alert_related_count": 0,
+      "cash_count": 1,
+      "amount_total": 402.26,
+      "alert_related_rate": 0.0,
+      "cash_rate": 0.3333333333333333
+    },
+    {
+      "event_step": 21,
+      "transaction_count": 2,
+      "alert_related_count": 1,
+      "cash_count": 1,
+      "amount_total": 213.98,
+      "alert_related_rate": 0.5,
+      "cash_rate": 0.5
+    },
+    {
+      "event_step": 22,
+      "transaction_count": 8,
+      "alert_related_count": 1,
+      "cash_count": 6,
+      "amount_total": 683.48,
+      "alert_related_rate": 0.125,
+      "cash_rate": 0.75
+    },
+    {
+      "event_step": 24,
+      "transaction_count": 3,
+      "alert_related_count": 0,
+      "cash_count": 3,
+      "amount_total": 161.53,
+      "alert_related_rate": 0.0,
+      "cash_rate": 1.0
+    },
+    {
+      "event_step": 25,
+      "transaction_count": 3,
+      "alert_related_count": 2,
+      "cash_count": 1,
+      "amount_total": 289.53000000000003,
+      "alert_related_rate": 0.6666666666666666,
+      "cash_rate": 0.3333333333333333
+    },
+    {
+      "event_step": 26,
+      "transaction_count": 2,
+      "alert_related_count": 1,
+      "cash_count": 1,
+      "amount_total": 230.41000000000003,
+      "alert_related_rate": 0.5,
+      "cash_rate": 0.5
+    },
+    {
+      "event_step": 27,
+      "transaction_count": 3,
+      "alert_related_count": 1,
+      "cash_count": 1,
+      "amount_total": 301.39,
+      "alert_related_rate": 0.3333333333333333,
+      "cash_rate": 0.3333333333333333
+    },
+    {
+      "event_step": 28,
+      "transaction_count": 3,
+      "alert_related_count": 0,
+      "cash_count": 2,
+      "amount_total": 239.62,
+      "alert_related_rate": 0.0,
+      "cash_rate": 0.6666666666666666
+    },
+    {
+      "event_step": 29,
+      "transaction_count": 3,
+      "alert_related_count": 1,
+      "cash_count": 2,
+      "amount_total": 263.44,
+      "alert_related_rate": 0.3333333333333333,
+      "cash_rate": 0.6666666666666666
+    },
+    {
+      "event_step": 30,
+      "transaction_count": 1,
+      "alert_related_count": 1,
+      "cash_count": 0,
+      "amount_total": 130.33,
+      "alert_related_rate": 1.0,
+      "cash_rate": 0.0
+    },
+    {
+      "event_step": 31,
+      "transaction_count": 2,
+      "alert_related_count": 0,
+      "cash_count": 2,
+      "amount_total": 124.86,
+      "alert_related_rate": 0.0,
+      "cash_rate": 1.0
+    },
+    {
+      "event_step": 32,
+      "transaction_count": 6,
+      "alert_related_count": 0,
+      "cash_count": 6,
+      "amount_total": 422.67,
+      "alert_related_rate": 0.0,
+      "cash_rate": 1.0
+    },
+    {
+      "event_step": 33,
+      "transaction_count": 1,
+      "alert_related_count": 0,
+      "cash_count": 0,
+      "amount_total": 143.41,
+      "alert_related_rate": 0.0,
+      "cash_rate": 0.0
+    },
+    {
+      "event_step": 34,
+      "transaction_count": 4,
+      "alert_related_count": 1,
+      "cash_count": 3,
+      "amount_total": 239.5,
+      "alert_related_rate": 0.25,
+      "cash_rate": 0.75
+    },
+    {
+      "event_step": 35,
+      "transaction_count": 2,
+      "alert_related_count": 1,
+      "cash_count": 1,
+      "amount_total": 186.89,
+      "alert_related_rate": 0.5,
+      "cash_rate": 0.5
+    },
+    {
+      "event_step": 36,
+      "transaction_count": 1,
+      "alert_related_count": 0,
+      "cash_count": 1,
+      "amount_total": 89.29,
+      "alert_related_rate": 0.0,
+      "cash_rate": 1.0
+    },
+    {
+      "event_step": 37,
+      "transaction_count": 1,
+      "alert_related_count": 0,
+      "cash_count": 0,
+      "amount_total": 172.97,
+      "alert_related_rate": 0.0,
+      "cash_rate": 0.0
+    },
+    {
+      "event_step": 38,
+      "transaction_count": 4,
+      "alert_related_count": 2,
+      "cash_count": 2,
+      "amount_total": 465.5,
+      "alert_related_rate": 0.5,
+      "cash_rate": 0.5
+    },
+    {
+      "event_step": 39,
+      "transaction_count": 3,
+      "alert_related_count": 1,
+      "cash_count": 2,
+      "amount_total": 210.9,
+      "alert_related_rate": 0.3333333333333333,
+      "cash_rate": 0.6666666666666666
+    },
+    {
+      "event_step": 40,
+      "transaction_count": 3,
+      "alert_related_count": 2,
+      "cash_count": 1,
+      "amount_total": 332.06,
+      "alert_related_rate": 0.6666666666666666,
+      "cash_rate": 0.3333333333333333
+    },
+    {
+      "event_step": 41,
+      "transaction_count": 2,
+      "alert_related_count": 0,
+      "cash_count": 1,
+      "amount_total": 217.57999999999998,
+      "alert_related_rate": 0.0,
+      "cash_rate": 0.5
+    },
+    {
+      "event_step": 42,
+      "transaction_count": 6,
+      "alert_related_count": 0,
+      "cash_count": 6,
+      "amount_total": 361.53999999999996,
+      "alert_related_rate": 0.0,
+      "cash_rate": 1.0
+    },
+    {
+      "event_step": 43,
+      "transaction_count": 1,
+      "alert_related_count": 1,
+      "cash_count": 0,
+      "amount_total": 125.88,
+      "alert_related_rate": 1.0,
+      "cash_rate": 0.0
+    },
+    {
+      "event_step": 44,
+      "transaction_count": 4,
+      "alert_related_count": 0,
+      "cash_count": 3,
+      "amount_total": 378.86,
+      "alert_related_rate": 0.0,
+      "cash_rate": 0.75
+    },
+    {
+      "event_step": 45,
+      "transaction_count": 1,
+      "alert_related_count": 0,
+      "cash_count": 1,
+      "amount_total": 84.71,
+      "alert_related_rate": 0.0,
+      "cash_rate": 1.0
+    },
+    {
+      "event_step": 46,
+      "transaction_count": 3,
+      "alert_related_count": 2,
+      "cash_count": 1,
+      "amount_total": 449.5,
+      "alert_related_rate": 0.6666666666666666,
+      "cash_rate": 0.3333333333333333
+    },
+    {
+      "event_step": 47,
+      "transaction_count": 1,
+      "alert_related_count": 0,
+      "cash_count": 0,
+      "amount_total": 147.66,
+      "alert_related_rate": 0.0,
+      "cash_rate": 0.0
+    },
+    {
+      "event_step": 48,
+      "transaction_count": 3,
+      "alert_related_count": 1,
+      "cash_count": 2,
+      "amount_total": 110.7,
+      "alert_related_rate": 0.3333333333333333,
+      "cash_rate": 0.6666666666666666
+    },
+    {
+      "event_step": 49,
+      "transaction_count": 2,
+      "alert_related_count": 0,
+      "cash_count": 2,
+      "amount_total": 61.849999999999994,
+      "alert_related_rate": 0.0,
+      "cash_rate": 1.0
+    }
+  ],
+  "recent_window_stats": {
+    "transactions_recent_1": 2,
+    "amount_recent_1": 61.849999999999994,
+    "alert_related_recent_1": 0,
+    "transactions_recent_7": 15,
+    "amount_recent_7": 1359.1600000000003,
+    "alert_related_recent_7": 4,
+    "transactions_recent_30": 81,
+    "amount_recent_30": 7242.3,
+    "alert_related_recent_30": 19
+  },
+  "top_parties_by_recent_outgoing_activity": [
+    {
+      "party_id": "C_0",
+      "outgoing_count_recent_30": 49.0,
+      "outgoing_amount_recent_30": 2841.9100000000003,
+      "label": 0
+    },
+    {
+      "party_id": "C_25",
+      "outgoing_count_recent_30": 5.0,
+      "outgoing_amount_recent_30": 451.41,
+      "label": 1
+    },
+    {
+      "party_id": "C_26",
+      "outgoing_count_recent_30": 2.0,
+      "outgoing_amount_recent_30": 286.82,
+      "label": 0
+    },
+    {
+      "party_id": "C_24",
+      "outgoing_count_recent_30": 2.0,
+      "outgoing_amount_recent_30": 158.38,
+      "label": 1
+    },
+    {
+      "party_id": "C_22",
+      "outgoing_count_recent_30": 2.0,
+      "outgoing_amount_recent_30": 379.76,
+      "label": 0
+    },
+    {
+      "party_id": "C_18",
+      "outgoing_count_recent_30": 2.0,
+      "outgoing_amount_recent_30": 362.04,
+      "label": 0
+    },
+    {
+      "party_id": "C_17",
+      "outgoing_count_recent_30": 2.0,
+      "outgoing_amount_recent_30": 396.54,
+      "label": 0
+    },
+    {
+      "party_id": "C_11",
+      "outgoing_count_recent_30": 2.0,
+      "outgoing_amount_recent_30": 249.72,
+      "label": 0
+    },
+    {
+      "party_id": "C_16",
+      "outgoing_count_recent_30": 2.0,
+      "outgoing_amount_recent_30": 381.94,
+      "label": 0
+    },
+    {
+      "party_id": "C_1",
+      "outgoing_count_recent_30": 1.0,
+      "outgoing_amount_recent_30": 81.51,
+      "label": 0
+    }
+  ],
+  "top_transactions_by_velocity": [
+    {
+      "transaction_id": 5,
+      "source_account_id": 0,
+      "source_account_velocity_ratio_1_to_30": 1.0,
+      "source_account_count_prev_7": 2.0,
+      "label": 0
+    },
+    {
+      "transaction_id": 9,
+      "source_account_id": 0,
+      "source_account_velocity_ratio_1_to_30": 1.0,
+      "source_account_count_prev_7": 6.0,
+      "label": 0
+    },
+    {
+      "transaction_id": 6,
+      "source_account_id": 0,
+      "source_account_velocity_ratio_1_to_30": 1.0,
+      "source_account_count_prev_7": 3.0,
+      "label": 0
+    },
+    {
+      "transaction_id": 3,
+      "source_account_id": 0,
+      "source_account_velocity_ratio_1_to_30": 1.0,
+      "source_account_count_prev_7": 1.0,
+      "label": 0
+    },
+    {
+      "transaction_id": 7,
+      "source_account_id": 0,
+      "source_account_velocity_ratio_1_to_30": 1.0,
+      "source_account_count_prev_7": 4.0,
+      "label": 0
+    },
+    {
+      "transaction_id": 8,
+      "source_account_id": 0,
+      "source_account_velocity_ratio_1_to_30": 1.0,
+      "source_account_count_prev_7": 5.0,
+      "label": 0
+    },
+    {
+      "transaction_id": 23,
+      "source_account_id": 23,
+      "source_account_velocity_ratio_1_to_30": 0.5,
+      "source_account_count_prev_7": 2.0,
+      "label": 0
+    },
+    {
+      "transaction_id": 19,
+      "source_account_id": 0,
+      "source_account_velocity_ratio_1_to_30": 0.3,
+      "source_account_count_prev_7": 10.0,
+      "label": 0
+    },
+    {
+      "transaction_id": 38,
+      "source_account_id": 0,
+      "source_account_velocity_ratio_1_to_30": 0.2727272727272727,
+      "source_account_count_prev_7": 12.0,
+      "label": 0
+    },
+    {
+      "transaction_id": 37,
+      "source_account_id": 0,
+      "source_account_velocity_ratio_1_to_30": 0.23809523809523808,
+      "source_account_count_prev_7": 11.0,
+      "label": 0
+    }
+  ]
+}

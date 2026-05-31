@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
+
 import pandas as pd
+
+from fri.features.temporal import build_party_temporal_features, build_transaction_temporal_features
 
 
 def _shared_count(links: pd.DataFrame, entity_column: str, id_column: str) -> pd.DataFrame:
@@ -8,11 +12,16 @@ def _shared_count(links: pd.DataFrame, entity_column: str, id_column: str) -> pd
     return links.merge(shared, on=entity_column, how="left")[[id_column, "shared_count"]].drop_duplicates(id_column)
 
 
-def build_transaction_features(tables: dict[str, pd.DataFrame]) -> pd.DataFrame:
+def build_transaction_features(
+    tables: dict[str, pd.DataFrame],
+    *,
+    temporal_windows: Sequence[int],
+) -> pd.DataFrame:
     transactions = tables["transactions"].copy()
     accounts = tables["accounts"].copy()
     account_device_links = tables["account_device_links"].copy()
     account_ip_links = tables["account_ip_links"].copy()
+    temporal_features = build_transaction_temporal_features(transactions, windows=temporal_windows)
 
     outgoing = transactions.groupby("source_account_id").agg(
         outgoing_transaction_count=("transaction_id", "size"),
@@ -54,6 +63,7 @@ def build_transaction_features(tables: dict[str, pd.DataFrame]) -> pd.DataFrame:
         right_on="destination_account_id",
         how="left",
     )
+    features = features.merge(temporal_features, on="transaction_id", how="left")
     features = features.fillna(0)
     features["label"] = features["is_alert_related"].astype(int)
     return features[
@@ -79,18 +89,50 @@ def build_transaction_features(tables: dict[str, pd.DataFrame]) -> pd.DataFrame:
             "destination_is_alerted",
             "destination_shared_device_count",
             "destination_shared_ip_count",
+            "source_account_previous_gap",
+            "source_account_count_prev_1",
+            "source_account_amount_prev_1",
+            "source_account_count_prev_7",
+            "source_account_amount_prev_7",
+            "source_account_count_prev_30",
+            "source_account_amount_prev_30",
+            "source_account_velocity_ratio_1_to_30",
+            "source_account_amount_ratio_1_to_30",
+            "destination_account_previous_gap",
+            "destination_account_count_prev_1",
+            "destination_account_amount_prev_1",
+            "destination_account_count_prev_7",
+            "destination_account_amount_prev_7",
+            "destination_account_count_prev_30",
+            "destination_account_amount_prev_30",
+            "destination_account_velocity_ratio_1_to_30",
+            "destination_account_amount_ratio_1_to_30",
+            "source_party_previous_gap",
+            "source_party_count_prev_1",
+            "source_party_amount_prev_1",
+            "source_party_count_prev_7",
+            "source_party_amount_prev_7",
+            "source_party_count_prev_30",
+            "source_party_amount_prev_30",
+            "source_party_velocity_ratio_1_to_30",
+            "source_party_amount_ratio_1_to_30",
             "label",
             "label_source",
         ]
     ]
 
 
-def build_party_features(tables: dict[str, pd.DataFrame]) -> pd.DataFrame:
+def build_party_features(
+    tables: dict[str, pd.DataFrame],
+    *,
+    temporal_windows: Sequence[int],
+) -> pd.DataFrame:
     parties = tables["parties"].copy()
     accounts = tables["accounts"].copy()
     transactions = tables["transactions"].copy()
     account_device_links = tables["account_device_links"].copy()
     account_ip_links = tables["account_ip_links"].copy()
+    temporal_features = build_party_temporal_features(transactions, parties, windows=temporal_windows)
 
     outgoing = transactions.groupby("source_party_id").agg(
         outgoing_transaction_count=("transaction_id", "size"),
@@ -113,6 +155,7 @@ def build_party_features(tables: dict[str, pd.DataFrame]) -> pd.DataFrame:
     features = features.merge(incoming, left_on="party_id", right_index=True, how="left")
     features = features.merge(device_count, left_on="party_id", right_index=True, how="left")
     features = features.merge(ip_count, left_on="party_id", right_index=True, how="left")
+    features = features.merge(temporal_features, on="party_id", how="left")
     features = features.fillna(0)
     features["label"] = features["is_alerted"].astype(int)
     return features[
@@ -130,13 +173,37 @@ def build_party_features(tables: dict[str, pd.DataFrame]) -> pd.DataFrame:
             "unique_source_accounts",
             "device_count",
             "ip_count",
+            "first_activity_step",
+            "last_activity_step",
+            "activity_span_steps",
+            "average_outgoing_gap",
+            "max_outgoing_gap",
+            "outgoing_count_recent_1",
+            "outgoing_amount_recent_1",
+            "outgoing_count_recent_7",
+            "outgoing_amount_recent_7",
+            "outgoing_count_recent_30",
+            "outgoing_amount_recent_30",
+            "outgoing_velocity_ratio_1_to_30",
+            "average_incoming_gap",
+            "max_incoming_gap",
+            "incoming_count_recent_1",
+            "incoming_amount_recent_1",
+            "incoming_count_recent_7",
+            "incoming_amount_recent_7",
+            "incoming_count_recent_30",
+            "incoming_amount_recent_30",
             "label",
         ]
     ]
 
 
-def build_feature_sets(tables: dict[str, pd.DataFrame]) -> dict[str, pd.DataFrame]:
+def build_feature_sets(
+    tables: dict[str, pd.DataFrame],
+    *,
+    temporal_windows: Sequence[int] = (1, 7, 30),
+) -> dict[str, pd.DataFrame]:
     return {
-        "transaction": build_transaction_features(tables),
-        "party": build_party_features(tables),
+        "transaction": build_transaction_features(tables, temporal_windows=temporal_windows),
+        "party": build_party_features(tables, temporal_windows=temporal_windows),
     }

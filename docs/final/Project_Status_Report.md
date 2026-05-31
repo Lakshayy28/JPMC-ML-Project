@@ -6,7 +6,7 @@ Summarize what is completed in the Financial Risk Intelligence Platform reposito
 
 ## Executive Summary
 
-The project is currently implemented through phase 7 in meaningful form.
+The project is currently implemented through the first meaningful phase-8 slice and now includes a real PyTorch GCN baseline on the graph side.
 
 Completed and validated:
 
@@ -17,10 +17,11 @@ Completed and validated:
 - phase 5 first classical evaluation track
 - phase 6 graph schema and graph analytics on a larger AMLSim archive
 - phase 7 first graph embedding pipeline and hybrid graph ML comparison
+- phase 8 rolling-window temporal features, activity reporting and drift reporting
+- first CPU-first PyTorch GCN baseline on the AMLSim archive graph
 
 Not yet implemented:
 
-- phase 8 temporal risk intelligence
 - phase 9 explainability service and dashboard outputs
 - phase 10 MLflow-based MLOps lifecycle
 - phase 11 FastAPI production scoring service
@@ -73,6 +74,13 @@ Artifact: `artifacts/baseline_metrics.json`
 
 These baselines are pipeline-validating, but the current sample is too small for serious performance claims.
 
+Current transaction-side sample results after temporal feature integration:
+
+| Model | PR-AUC | Precision | Recall | F1 | ROC-AUC |
+| --- | --- | --- | --- | --- | --- |
+| Logistic Regression | 0.9762 | 0.8571 | 1.0000 | 0.9231 | 0.9940 |
+| Random Forest | 1.0000 | 1.0000 | 0.8333 | 0.9091 | 1.0000 |
+
 ### Graph Analytics
 
 Archive sample used for graph phases:
@@ -120,6 +128,36 @@ Interpretation:
 - embeddings alone are weaker than handcrafted graph features
 - hybrid graph features plus embeddings are currently the strongest phase-7 result
 
+### PyTorch GNN Track
+
+Artifact: `artifacts/graph/pytorch_gcn_metrics.json`
+
+Current first neural baseline:
+
+| Model | PR-AUC | Precision | Recall | F1 | ROC-AUC |
+| --- | --- | --- | --- | --- | --- |
+| 2-layer GCN | 0.5660 | 0.2671 | 0.7982 | 0.4002 | 0.8643 |
+
+Interpretation:
+
+- the first GCN is now real and validated on the 20K archive sample
+- recall is strong, but precision still lags the best classical graph baseline
+- the repo no longer depends on spectral baselines alone to justify the graph ML direction
+
+### Temporal Intelligence Track
+
+Artifacts:
+
+- `artifacts/temporal/temporal_activity_summary.json`
+- `artifacts/temporal/temporal_drift_report.json`
+
+Current validated temporal output:
+
+- transaction feature matrix: 133 x 50
+- party feature matrix: 30 x 34
+- drift engine analyzed 27 temporal features
+- current recent-vs-baseline cohort: steps 43 to 49 against steps 13 to 42
+
 ## Documentation Coverage
 
 Completed docs now exist for:
@@ -131,6 +169,7 @@ Completed docs now exist for:
 - phase 5
 - phase 6
 - phase 7
+- phase 8
 
 Most useful current entry points:
 
@@ -138,22 +177,24 @@ Most useful current entry points:
 - `docs/phase-3/Initial_Implementation_Summary.md`
 - `docs/phase-5/Evaluation_Report.md`
 - `docs/phase-7/Performance_Comparison_Report.md`
+- `docs/phase-7/GNN_Track_Report.md`
+- `docs/phase-8/Temporal_Feature_Service_Spec.md`
 
 ## Main Gaps
 
 1. the processed tabular layer still uses the bundled AMLSim sample outputs rather than a richer converted AMLSim run
 2. transaction labels in sample mode remain partly proxy-based rather than fully direct alert-transaction labels
-3. there is no temporal drift or rolling-window engine yet
+3. the temporal intelligence layer is artifact-backed only and not yet surfaced through a UI or service contract
 4. there is no explainability service or API layer yet
-5. there is no GNN stack yet
+5. the GNN stack currently stops at a CPU-first full-batch GCN and has not yet moved to PyG, GraphSAGE, or larger-scale batching
 
 ## Recommended Next Steps
 
 ### Next Build Block
 
 1. phase 8: add rolling-window temporal features and temporal drift reporting
-2. add direct time-windowed transaction features into the canonical feature layer
-3. compare temporal-enhanced tabular models with current non-temporal baselines
+2. calibrate drift thresholds and enrich the temporal artifact contract for downstream UI and alerting use
+3. compare temporal-enhanced tabular models against a richer AMLSim run, not only the small bundled sample
 
 ### Next Infra Block
 
@@ -163,16 +204,16 @@ Most useful current entry points:
 ### Next Graph ML Block
 
 1. add a stronger non-neural embedding baseline such as Node2Vec-style random walks
-2. add the first GNN track using GCN or GraphSAGE
-3. use GPU help only when the PyTorch-based GNN phase begins or if training scale grows materially
+2. tune the PyTorch GCN thresholding and input feature contract
+3. add GraphSAGE or PyG only when experimentation speed or dataset size justifies the heavier stack
 
 ## When User Help May Be Needed
 
 No GPU help is needed yet.
 
-The first likely point to ask for help is when moving from the current CPU-friendly spectral embedding pipeline to a PyTorch/PyG-based GNN training stack, especially if you want:
+The first likely point to ask for help is when moving beyond the current CPU-friendly GCN into heavier neural graph experimentation, especially if you want:
 
-- GraphSAGE or GCN training on larger AMLSim graphs
+- GraphSAGE or GAT training on larger AMLSim graphs
 - faster repeated experiments
 - more sophisticated graph mini-batching
 

@@ -1,0 +1,215 @@
+{
+  "cohorts": {
+    "min_step": 1,
+    "max_step": 49,
+    "baseline_start": 13,
+    "baseline_end": 42,
+    "recent_start": 43,
+    "recent_end": 49,
+    "baseline_rows": 80,
+    "recent_rows": 15
+  },
+  "feature_count_analyzed": 27,
+  "top_drift_features": [
+    {
+      "feature": "source_account_amount_prev_30",
+      "baseline_mean": 1444.5225000000003,
+      "recent_mean": 1802.259333333334,
+      "mean_delta": 357.73683333333383,
+      "relative_change": 0.24765057888217995,
+      "ks_statistic": 0.525,
+      "ks_pvalue": 0.0009898062007714264
+    },
+    {
+      "feature": "source_party_amount_prev_30",
+      "baseline_mean": 1444.5225000000003,
+      "recent_mean": 1802.259333333334,
+      "mean_delta": 357.73683333333383,
+      "relative_change": 0.24765057888217995,
+      "ks_statistic": 0.525,
+      "ks_pvalue": 0.0009898062007714264
+    },
+    {
+      "feature": "source_account_amount_prev_7",
+      "baseline_mean": 404.62975000000006,
+      "recent_mean": 553.9766666666668,
+      "mean_delta": 149.34691666666674,
+      "relative_change": 0.36909524489157486,
+      "ks_statistic": 0.525,
+      "ks_pvalue": 0.0009898062007714264
+    },
+    {
+      "feature": "source_party_amount_prev_7",
+      "baseline_mean": 404.62975000000006,
+      "recent_mean": 553.9766666666668,
+      "mean_delta": 149.34691666666674,
+      "relative_change": 0.36909524489157486,
+      "ks_statistic": 0.525,
+      "ks_pvalue": 0.0009898062007714264
+    },
+    {
+      "feature": "source_account_count_prev_30",
+      "baseline_mean": 26.2,
+      "recent_mean": 30.133333333333333,
+      "mean_delta": 3.9333333333333336,
+      "relative_change": 0.15012722646310434,
+      "ks_statistic": 0.4,
+      "ks_pvalue": 0.0253103462909545
+    },
+    {
+      "feature": "source_party_count_prev_30",
+      "baseline_mean": 26.2,
+      "recent_mean": 30.133333333333333,
+      "mean_delta": 3.9333333333333336,
+      "relative_change": 0.15012722646310434,
+      "ks_statistic": 0.4,
+      "ks_pvalue": 0.0253103462909545
+    },
+    {
+      "feature": "source_account_count_prev_7",
+      "baseline_mean": 7.0875,
+      "recent_mean": 8.2,
+      "mean_delta": 1.112499999999999,
+      "relative_change": 0.15696649029982349,
+      "ks_statistic": 0.29583333333333334,
+      "ks_pvalue": 0.18058471767687892
+    },
+    {
+      "feature": "source_party_count_prev_7",
+      "baseline_mean": 7.0875,
+      "recent_mean": 8.2,
+      "mean_delta": 1.112499999999999,
+      "relative_change": 0.15696649029982349,
+      "ks_statistic": 0.29583333333333334,
+      "ks_pvalue": 0.18058471767687892
+    },
+    {
+      "feature": "source_account_amount_ratio_1_to_30",
+      "baseline_mean": 0.034754597938401015,
+      "recent_mean": 0.01683962914080118,
+      "mean_delta": -0.017914968797599833,
+      "relative_change": -0.515470466076238,
+      "ks_statistic": 0.24583333333333332,
+      "ks_pvalue": 0.3715109950903903
+    },
+    {
+      "feature": "source_party_amount_ratio_1_to_30",
+      "baseline_mean": 0.034754597938401015,
+      "recent_mean": 0.01683962914080118,
+      "mean_delta": -0.017914968797599833,
+      "relative_change": -0.515470466076238,
+      "ks_statistic": 0.24583333333333332,
+      "ks_pvalue": 0.3715109950903903
+    }
+  ],
+  "strong_drift_features": [
+    {
+      "feature": "source_account_amount_prev_30",
+      "baseline_mean": 1444.5225000000003,
+      "recent_mean": 1802.259333333334,
+      "mean_delta": 357.73683333333383,
+      "relative_change": 0.24765057888217995,
+      "ks_statistic": 0.525,
+      "ks_pvalue": 0.0009898062007714264
+    },
+    {
+      "feature": "source_party_amount_prev_30",
+      "baseline_mean": 1444.5225000000003,
+      "recent_mean": 1802.259333333334,
+      "mean_delta": 357.73683333333383,
+      "relative_change": 0.24765057888217995,
+      "ks_statistic": 0.525,
+      "ks_pvalue": 0.0009898062007714264
+    },
+    {
+      "feature": "source_account_amount_prev_7",
+      "baseline_mean": 404.62975000000006,
+      "recent_mean": 553.9766666666668,
+      "mean_delta": 149.34691666666674,
+      "relative_change": 0.36909524489157486,
+      "ks_statistic": 0.525,
+      "ks_pvalue": 0.0009898062007714264
+    },
+    {
+      "feature": "source_party_amount_prev_7",
+      "baseline_mean": 404.62975000000006,
+      "recent_mean": 553.9766666666668,
+      "mean_delta": 149.34691666666674,
+      "relative_change": 0.36909524489157486,
+      "ks_statistic": 0.525,
+      "ks_pvalue": 0.0009898062007714264
+    },
+    {
+      "feature": "source_account_count_prev_30",
+      "baseline_mean": 26.2,
+      "recent_mean": 30.133333333333333,
+      "mean_delta": 3.9333333333333336,
+      "relative_change": 0.15012722646310434,
+      "ks_statistic": 0.4,
+      "ks_pvalue": 0.0253103462909545
+    },
+    {
+      "feature": "source_party_count_prev_30",
+      "baseline_mean": 26.2,
+      "recent_mean": 30.133333333333333,
+      "mean_delta": 3.9333333333333336,
+      "relative_change": 0.15012722646310434,
+      "ks_statistic": 0.4,
+      "ks_pvalue": 0.0253103462909545
+    },
+    {
+      "feature": "source_account_count_prev_7",
+      "baseline_mean": 7.0875,
+      "recent_mean": 8.2,
+      "mean_delta": 1.112499999999999,
+      "relative_change": 0.15696649029982349,
+      "ks_statistic": 0.29583333333333334,
+      "ks_pvalue": 0.18058471767687892
+    },
+    {
+      "feature": "source_party_count_prev_7",
+      "baseline_mean": 7.0875,
+      "recent_mean": 8.2,
+      "mean_delta": 1.112499999999999,
+      "relative_change": 0.15696649029982349,
+      "ks_statistic": 0.29583333333333334,
+      "ks_pvalue": 0.18058471767687892
+    },
+    {
+      "feature": "source_account_amount_ratio_1_to_30",
+      "baseline_mean": 0.034754597938401015,
+      "recent_mean": 0.01683962914080118,
+      "mean_delta": -0.017914968797599833,
+      "relative_change": -0.515470466076238,
+      "ks_statistic": 0.24583333333333332,
+      "ks_pvalue": 0.3715109950903903
+    },
+    {
+      "feature": "source_party_amount_ratio_1_to_30",
+      "baseline_mean": 0.034754597938401015,
+      "recent_mean": 0.01683962914080118,
+      "mean_delta": -0.017914968797599833,
+      "relative_change": -0.515470466076238,
+      "ks_statistic": 0.24583333333333332,
+      "ks_pvalue": 0.3715109950903903
+    },
+    {
+      "feature": "source_account_velocity_ratio_1_to_30",
+      "baseline_mean": 0.03205148796644551,
+      "recent_mean": 0.017444311057756436,
+      "mean_delta": -0.014607176908689075,
+      "relative_change": -0.4557409916188987,
+      "ks_statistic": 0.225,
+      "ks_pvalue": 0.4787575962687789
+    },
+    {
+      "feature": "source_party_velocity_ratio_1_to_30",
+      "baseline_mean": 0.03205148796644551,
+      "recent_mean": 0.017444311057756436,
+      "mean_delta": -0.014607176908689075,
+      "relative_change": -0.4557409916188987,
+      "ks_statistic": 0.225,
+      "ks_pvalue": 0.4787575962687789
+    }
+  ]
+}

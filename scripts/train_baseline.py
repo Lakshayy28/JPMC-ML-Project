@@ -17,7 +17,7 @@ from fri.models.baseline import train_all_baselines
 def main() -> None:
     settings = load_settings()
     tables = load_processed_tables(settings.dataset.processed_root)
-    feature_sets = build_feature_sets(tables)
+    feature_sets = build_feature_sets(tables, temporal_windows=settings.temporal.windows)
     metrics = train_all_baselines(
         feature_sets,
         random_state=settings.models.random_state,
