@@ -18,6 +18,11 @@ Capture what has already been executed after the phase-1 AMLSim decision so the 
 - phase-1 fraud taxonomy
 - phase-1 dataset assessment
 - phase-1 entity relationship mapping
+- phase-3 data dictionary, EDA report and data validation specification
+- phase-4 feature store design and feature documentation
+- phase-5 evaluation report
+- phase-6 graph schema specification and graph analytics report
+- phase-7 graph feature service spec, embedding pipeline spec and performance comparison report
 
 ### Scaffold Added
 
@@ -28,6 +33,10 @@ Capture what has already been executed after the phase-1 AMLSim decision so the 
 - deterministic Device, IP Address and Merchant enrichment
 - baseline feature builders for transaction and party scoring
 - baseline model trainers using logistic regression and random forest
+- processed-data profiling and validation modules
+- AMLSim archive graph ingestion and weighted graph building
+- graph analytics, community-aware node feature generation and graph baseline training
+- sparse spectral embedding pipeline and hybrid graph feature plus embedding training
 - executable scripts for canonical dataset building and baseline training
 - unit-test scaffold under `tests/unit`
 
@@ -71,6 +80,37 @@ Snapshot from the current sample-backed run:
 | Party | Logistic Regression | 1.0000 | 1.0000 | 1.0000 | 1.0000 | 1.0000 |
 | Party | Random Forest | 1.0000 | 0.0000 | 0.0000 | 0.0000 | 1.0000 |
 
+### Phase-3 And Graph Artifacts
+
+Additional generated artifacts now present in the repository:
+
+- `artifacts/data_validation_report.json`
+- `artifacts/eda_summary.json`
+- `artifacts/graph/archive_graph_summary.json`
+- `artifacts/graph/archive_node_features.csv`
+- `artifacts/graph/graph_baseline_metrics.json`
+- `artifacts/graph/archive_node_embeddings.csv`
+- `artifacts/graph/graph_embedding_metrics.json`
+
+### Graph Archive Results
+
+Current archive sample: `20K_fanin200cycle200`
+
+| Metric | Value |
+| --- | --- |
+| Nodes | 20,000 |
+| Edges | 117,341 |
+| Largest weak component | 19,980 |
+| Average clustering | 0.004445 |
+
+### Graph Model Snapshot
+
+| Track | Best Current Model | PR-AUC | Recall | ROC-AUC |
+| --- | --- | --- | --- | --- |
+| Graph features only | Random Forest | 0.6239 | 0.4878 | 0.9191 |
+| Embeddings only | Random Forest | 0.3457 | 0.1441 | 0.7144 |
+| Features + embeddings | Random Forest | 0.6490 | 0.4324 | 0.9224 |
+
 ## Important Caveats
 
 1. These metrics come from the tiny bundled AMLSim sample outputs, not from a production-scale AMLSim simulation.
@@ -82,5 +122,5 @@ Snapshot from the current sample-backed run:
 
 1. Generate a larger AMLSim converted output using the `1K` configuration or another controlled parameter set.
 2. Expand the processed layer to ingest full party, account mapping and alert transaction exports when they are available.
-3. Add the phase-3 data dictionary and validation specification against the canonical processed tables now being produced.
-4. Replace proxy transaction labels with direct alert transaction labels once full converted outputs are generated.
+3. Start phase 8 temporal risk intelligence by adding rolling-window features and simple drift monitoring over canonical transactions.
+4. Start the first GNN track once the runtime stack is ready for PyTorch-style graph training; GPU help is not required yet, but it may become useful for later graph neural network experiments.

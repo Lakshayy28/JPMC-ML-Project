@@ -1,0 +1,237 @@
+{
+  "table_row_counts": {
+    "account_device_links": 30,
+    "account_ip_links": 30,
+    "accounts": 30,
+    "alerts": 2,
+    "banks": 1,
+    "devices": 14,
+    "ip_addresses": 24,
+    "merchants": 19,
+    "parties": 30,
+    "transaction_merchant_links": 133,
+    "transactions": 133
+  },
+  "account_alert_rate": 0.06666666666666667,
+  "party_alert_rate": 0.06666666666666667,
+  "transaction_alert_rate": 0.18796992481203006,
+  "cash_transaction_rate": 0.6616541353383458,
+  "transaction_type_distribution": {
+    "CASH-OUT": 80,
+    "CHECK": 13,
+    "CREDIT": 12,
+    "DEPOSIT": 12,
+    "WIRE": 8,
+    "CASH-IN": 8
+  },
+  "label_source_distribution": {
+    "none": 108,
+    "alert_adjacent_account": 25
+  },
+  "amount_summary": {
+    "count": 133.0,
+    "mean": 88.97443609022555,
+    "std": 54.05126186979796,
+    "min": 10.23,
+    "25%": 44.99,
+    "50%": 77.58,
+    "75%": 131.0,
+    "max": 198.27
+  },
+  "initial_balance_summary": {
+    "count": 30.0,
+    "mean": 161.29866666666666,
+    "std": 25.354432889071624,
+    "min": 110.07,
+    "25%": 142.4,
+    "50%": 161.465,
+    "75%": 183.585,
+    "max": 198.28
+  },
+  "top_shared_devices": [
+    {
+      "device_id": "device_011",
+      "shared_account_count": 4,
+      "source_type": "derived",
+      "device_family": 11
+    },
+    {
+      "device_id": "device_001",
+      "shared_account_count": 3,
+      "source_type": "derived",
+      "device_family": 1
+    },
+    {
+      "device_id": "device_002",
+      "shared_account_count": 3,
+      "source_type": "derived",
+      "device_family": 2
+    },
+    {
+      "device_id": "device_004",
+      "shared_account_count": 3,
+      "source_type": "derived",
+      "device_family": 4
+    },
+    {
+      "device_id": "device_008",
+      "shared_account_count": 3,
+      "source_type": "derived",
+      "device_family": 8
+    },
+    {
+      "device_id": "device_003",
+      "shared_account_count": 2,
+      "source_type": "derived",
+      "device_family": 3
+    },
+    {
+      "device_id": "device_006",
+      "shared_account_count": 2,
+      "source_type": "derived",
+      "device_family": 6
+    },
+    {
+      "device_id": "device_009",
+      "shared_account_count": 2,
+      "source_type": "derived",
+      "device_family": 9
+    },
+    {
+      "device_id": "device_013",
+      "shared_account_count": 2,
+      "source_type": "derived",
+      "device_family": 13
+    },
+    {
+      "device_id": "device_014",
+      "shared_account_count": 2,
+      "source_type": "derived",
+      "device_family": 14
+    }
+  ],
+  "top_shared_ip_addresses": [
+    {
+      "ip_id": "ip_000",
+      "shared_account_count": 2,
+      "country_hint": "US",
+      "source_type": "derived"
+    },
+    {
+      "ip_id": "ip_007",
+      "shared_account_count": 2,
+      "country_hint": "US",
+      "source_type": "derived"
+    },
+    {
+      "ip_id": "ip_049",
+      "shared_account_count": 2,
+      "country_hint": "US",
+      "source_type": "derived"
+    },
+    {
+      "ip_id": "ip_015",
+      "shared_account_count": 2,
+      "country_hint": "US",
+      "source_type": "derived"
+    },
+    {
+      "ip_id": "ip_059",
+      "shared_account_count": 2,
+      "country_hint": "US",
+      "source_type": "derived"
+    },
+    {
+      "ip_id": "ip_003",
+      "shared_account_count": 2,
+      "country_hint": "US",
+      "source_type": "derived"
+    },
+    {
+      "ip_id": "ip_006",
+      "shared_account_count": 1,
+      "country_hint": "US",
+      "source_type": "derived"
+    },
+    {
+      "ip_id": "ip_036",
+      "shared_account_count": 1,
+      "country_hint": "US",
+      "source_type": "derived"
+    },
+    {
+      "ip_id": "ip_058",
+      "shared_account_count": 1,
+      "country_hint": "US",
+      "source_type": "derived"
+    },
+    {
+      "ip_id": "ip_055",
+      "shared_account_count": 1,
+      "country_hint": "US",
+      "source_type": "derived"
+    }
+  ],
+  "top_merchants": [
+    {
+      "merchant_id": "merchant_006",
+      "transaction_count": 80,
+      "source_type": "derived",
+      "merchant_segment": 6
+    },
+    {
+      "merchant_id": "merchant_010",
+      "transaction_count": 8,
+      "source_type": "derived",
+      "merchant_segment": 10
+    },
+    {
+      "merchant_id": "merchant_014",
+      "transaction_count": 7,
+      "source_type": "derived",
+      "merchant_segment": 14
+    },
+    {
+      "merchant_id": "merchant_022",
+      "transaction_count": 6,
+      "source_type": "derived",
+      "merchant_segment": 22
+    },
+    {
+      "merchant_id": "merchant_003",
+      "transaction_count": 6,
+      "source_type": "derived",
+      "merchant_segment": 3
+    },
+    {
+      "merchant_id": "merchant_015",
+      "transaction_count": 6,
+      "source_type": "derived",
+      "merchant_segment": 15
+    },
+    {
+      "merchant_id": "merchant_018",
+      "transaction_count": 3,
+      "source_type": "derived",
+      "merchant_segment": 18
+    },
+    {
+      "merchant_id": "merchant_021",
+      "transaction_count": 3,
+      "source_type": "derived",
+      "merchant_segment": 21
+    },
+    {
+      "merchant_id": "merchant_008",
+      "transaction_count": 2,
+      "source_type": "derived",
+      "merchant_segment": 8
+    },
+    {
+      "merchant_id": "merchant_009",
+      "transaction_count": 2,
+      "source_type": "derived",
+      "merchant_segment": 9
+    }
+  ]
+}

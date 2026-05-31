@@ -33,10 +33,20 @@ class ModelSettings:
 
 
 @dataclass(frozen=True)
+class GraphSettings:
+    archive_sample: Path
+    output_root: Path
+    community_detection: bool = True
+    community_seed: int = 42
+    embedding_dimensions: int = 16
+
+
+@dataclass(frozen=True)
 class Settings:
     dataset: DatasetSettings
     enrichment: EnrichmentSettings
     models: ModelSettings
+    graph: GraphSettings
 
 
 def _resolve_path(raw_path: str | Path) -> Path:
@@ -54,6 +64,7 @@ def load_settings(config_path: str | Path | None = None) -> Settings:
     dataset_payload = payload.get("dataset", {})
     enrichment_payload = payload.get("enrichment", {})
     model_payload = payload.get("models", {})
+    graph_payload = payload.get("graph", {})
 
     return Settings(
         dataset=DatasetSettings(
@@ -72,5 +83,14 @@ def load_settings(config_path: str | Path | None = None) -> Settings:
         models=ModelSettings(
             random_state=int(model_payload.get("random_state", 42)),
             test_size=float(model_payload.get("test_size", 0.25)),
+        ),
+        graph=GraphSettings(
+            archive_sample=_resolve_path(
+                graph_payload.get("archive_sample", "data/external/AMLSim/sample/20K_fanin200cycle200.tgz")
+            ),
+            output_root=_resolve_path(graph_payload.get("output_root", "artifacts/graph")),
+            community_detection=bool(graph_payload.get("community_detection", True)),
+            community_seed=int(graph_payload.get("community_seed", 42)),
+            embedding_dimensions=int(graph_payload.get("embedding_dimensions", 16)),
         ),
     )

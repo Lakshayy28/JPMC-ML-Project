@@ -9,6 +9,7 @@ description = "Financial Risk Intelligence platform scaffold built on IBM AMLSim
 readme = "docs/Documentation_Roadmap.md"
 requires-python = ">=3.10"
 dependencies = [
+  "networkx>=3.3",
   "pandas>=2.2",
   "PyYAML>=6.0",
   "scikit-learn>=1.5",

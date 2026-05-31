@@ -1,0 +1,123 @@
+{
+  "row_counts": {
+    "account_device_links": 30,
+    "account_ip_links": 30,
+    "accounts": 30,
+    "alerts": 2,
+    "banks": 1,
+    "devices": 14,
+    "ip_addresses": 24,
+    "merchants": 19,
+    "parties": 30,
+    "transaction_merchant_links": 133,
+    "transactions": 133
+  },
+  "null_counts": {
+    "account_device_links": {},
+    "account_ip_links": {},
+    "accounts": {},
+    "alerts": {},
+    "banks": {},
+    "devices": {},
+    "ip_addresses": {},
+    "merchants": {},
+    "parties": {},
+    "transaction_merchant_links": {},
+    "transactions": {
+      "destination_account_id": 88,
+      "event_timestamp": 133,
+      "destination_party_id": 88
+    }
+  },
+  "uniqueness_checks": {
+    "accounts.account_id": 0,
+    "parties.party_id": 0,
+    "transactions.transaction_id_is_cash": 0,
+    "alerts.alert_account": 0,
+    "banks.bank_id": 0,
+    "devices.device_id": 0,
+    "ip_addresses.ip_id": 0,
+    "merchants.merchant_id": 0
+  },
+  "referential_integrity": {
+    "accounts.party_id -> parties.party_id": {
+      "passed": true,
+      "missing_references": 0,
+      "checked_rows": 30
+    },
+    "accounts.bank_id -> banks.bank_id": {
+      "passed": true,
+      "missing_references": 0,
+      "checked_rows": 30
+    },
+    "alerts.account_id -> accounts.account_id": {
+      "passed": true,
+      "missing_references": 0,
+      "checked_rows": 2
+    },
+    "alerts.party_id -> parties.party_id": {
+      "passed": true,
+      "missing_references": 0,
+      "checked_rows": 2
+    },
+    "transactions.source_account_id -> accounts.account_id": {
+      "passed": true,
+      "missing_references": 0,
+      "checked_rows": 133
+    },
+    "transactions.destination_account_id -> accounts.account_id": {
+      "passed": true,
+      "missing_references": 0,
+      "checked_rows": 45
+    },
+    "account_device_links.account_id -> accounts.account_id": {
+      "passed": true,
+      "missing_references": 0,
+      "checked_rows": 30
+    },
+    "account_device_links.device_id -> devices.device_id": {
+      "passed": true,
+      "missing_references": 0,
+      "checked_rows": 30
+    },
+    "account_ip_links.account_id -> accounts.account_id": {
+      "passed": true,
+      "missing_references": 0,
+      "checked_rows": 30
+    },
+    "account_ip_links.ip_id -> ip_addresses.ip_id": {
+      "passed": true,
+      "missing_references": 0,
+      "checked_rows": 30
+    },
+    "transaction_merchant_links.transaction_id -> transactions.transaction_id": {
+      "passed": true,
+      "missing_references": 0,
+      "checked_rows": 133
+    },
+    "transaction_merchant_links.merchant_id -> merchants.merchant_id": {
+      "passed": true,
+      "missing_references": 0,
+      "checked_rows": 133
+    }
+  },
+  "required_columns": {
+    "accounts": {
+      "passed": true,
+      "missing_columns": []
+    },
+    "parties": {
+      "passed": true,
+      "missing_columns": []
+    },
+    "transactions": {
+      "passed": true,
+      "missing_columns": []
+    },
+    "alerts": {
+      "passed": true,
+      "missing_columns": []
+    }
+  },
+  "all_checks_passed": true
+}

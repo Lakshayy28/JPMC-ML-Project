@@ -14,3 +14,10 @@ enrichment:
 models:
   random_state: 42
   test_size: 0.25
+
+graph:
+  archive_sample: data/external/AMLSim/sample/20K_fanin200cycle200.tgz
+  output_root: artifacts/graph
+  community_detection: true
+  community_seed: 42
+  embedding_dimensions: 16
