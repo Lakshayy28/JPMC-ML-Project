@@ -20,6 +20,9 @@ from fri.explainability.service import NodeExplanationReport
 
 
 class _FakeEngineState:
+    def __init__(self) -> None:
+        self.explain_calls: list[tuple[int, int]] = []
+
     def health_payload(self) -> dict[str, str]:
         return {"status": "healthy", "model": "hetero_gat"}
 
@@ -35,9 +38,10 @@ class _FakeEngineState:
 
         return _Prediction()
 
-    def explain_account(self, account_id: int) -> NodeExplanationReport:
+    def explain_account(self, account_id: int, *, epochs: int = 50) -> NodeExplanationReport:
         if account_id != 19204:
             raise KeyError(account_id)
+        self.explain_calls.append((account_id, epochs))
         return NodeExplanationReport(
             node_id=19204,
             risk_score=0.9985,
@@ -66,9 +70,44 @@ def test_api_routes_return_expected_payloads(monkeypatch: pytest.MonkeyPatch) ->
         assert explanation_response.status_code == 200
         assert explanation_response.json()["account_id"] == 19204
         assert "incoming_amount_velocity_1d" in explanation_response.json()["top_features"]
+        assert fake_state.explain_calls == [(19204, 50)]
 
         missing_prediction = client.get("/predict/1")
         assert missing_prediction.status_code == 404
 
         missing_explanation = client.get("/explain/1")
         assert missing_explanation.status_code == 404
+
+
+def test_engine_state_caches_explanations() -> None:
+    api_state.EngineState._explain_account_cached.cache_clear()
+
+    class _CountingExplainer:
+        def __init__(self) -> None:
+            self.calls: list[tuple[int, int]] = []
+
+        def explain_account(self, data: object, account_index: int, *, epochs: int = 50) -> NodeExplanationReport:
+            self.calls.append((account_index, epochs))
+            return NodeExplanationReport(
+                node_id=19204,
+                risk_score=0.9985,
+                top_node_features={"incoming_amount_velocity_1d": 0.56},
+                critical_edges=[{"transaction_id": 117726, "amount": 18.69}],
+            )
+
+    counting_explainer = _CountingExplainer()
+    engine = api_state.EngineState.__new__(api_state.EngineState)
+    engine.account_id_to_index = {19204: 7}
+    engine.data = object()
+    engine.explainer = counting_explainer
+
+    first_report = engine.explain_account(19204, epochs=50)
+    second_report = engine.explain_account(19204, epochs=50)
+    third_report = engine.explain_account(19204, epochs=25)
+
+    assert first_report.node_id == 19204
+    assert second_report.node_id == 19204
+    assert third_report.node_id == 19204
+    assert counting_explainer.calls == [(7, 50), (7, 25)]
+
+    api_state.EngineState._explain_account_cached.cache_clear()

@@ -162,7 +162,7 @@ def main() -> None:
     )
 
     print("--> Generating explanation report with PyG Explainer...", flush=True)
-    report = service.explain_account(normalized_data, account_index)
+    report = service.explain_account(normalized_data, account_index, epochs=args.explainer_epochs)
     output_path = output_dir / "account_explanation_sample.json"
     output_payload = asdict(report)
     output_path.write_text(json.dumps(output_payload, indent=2), encoding="utf-8")

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
+from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -13,8 +14,6 @@ from fri.explainability.service import HeteroGraphExplainerService, NodeExplanat
 from fri.graph.io import load_archive_graph_data
 from fri.graph.service import build_graph_feature_bundle
 from fri.models.pytorch_gnn import (
-    PYGGraphBundle,
-    SpatialTemporalHeteroGAT,
     build_pyg_graph_data_from_feature_bundle,
     load_trained_hetero_gat_model,
     prepare_hetero_inference_data,
@@ -144,9 +143,13 @@ class EngineState:
             threshold_used=self.threshold_used,
         )
 
-    def explain_account(self, account_id: int) -> NodeExplanationReport:
+    @lru_cache(maxsize=128)
+    def _explain_account_cached(self, account_id: int, epochs: int) -> NodeExplanationReport:
         account_index = self.account_index_for_id(account_id)
-        return self.explainer.explain_account(self.data, account_index)
+        return self.explainer.explain_account(self.data, account_index, epochs=epochs)
+
+    def explain_account(self, account_id: int, *, epochs: int = 50) -> NodeExplanationReport:
+        return self._explain_account_cached(account_id, int(epochs))
 
 
 _ENGINE_STATE: EngineState | None = None

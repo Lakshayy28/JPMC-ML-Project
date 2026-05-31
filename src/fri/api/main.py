@@ -42,7 +42,7 @@ def predict(account_id: int) -> schemas.RiskPredictionResponse:
 def explain(account_id: int) -> schemas.ExplanationResponse:
     engine = api_state.get_engine_state()
     try:
-        report = engine.explain_account(account_id)
+        report = engine.explain_account(account_id, epochs=50)
     except KeyError as exc:
         raise HTTPException(status_code=404, detail=f"Account id {account_id} was not found in the graph") from exc
     return schemas.ExplanationResponse(

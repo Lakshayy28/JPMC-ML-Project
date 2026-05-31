@@ -37,9 +37,13 @@ class HeteroGraphExplainerService:
         self.raw_edge_records = dict(raw_edge_records or {})
         self.top_k_features = int(top_k_features)
         self.top_k_edges = int(top_k_edges)
-        self.explainer = Explainer(
+        self.default_explainer_epochs = int(explainer_epochs)
+
+    def _build_explainer(self, *, epochs: int | None = None) -> Explainer:
+        resolved_epochs = int(epochs if epochs is not None else self.default_explainer_epochs)
+        return Explainer(
             model=self.model,
-            algorithm=GNNExplainer(epochs=explainer_epochs),
+            algorithm=GNNExplainer(epochs=resolved_epochs),
             explanation_type="model",
             node_mask_type="attributes",
             edge_mask_type="object",
@@ -50,7 +54,7 @@ class HeteroGraphExplainerService:
             ),
         )
 
-    def explain_account(self, data: HeteroData, account_index: int) -> NodeExplanationReport:
+    def explain_account(self, data: HeteroData, account_index: int, *, epochs: int = 50) -> NodeExplanationReport:
         edge_attr_dict = {
             edge_type: data[edge_type].edge_attr
             for edge_type in data.edge_types
@@ -62,7 +66,7 @@ class HeteroGraphExplainerService:
             risk_probabilities = torch.softmax(logits, dim=1)[:, 1]
             risk_score = float(risk_probabilities[account_index].detach().cpu().item())
 
-        explanation = self.explainer(
+        explanation = self._build_explainer(epochs=epochs)(
             data.x_dict,
             data.edge_index_dict,
             edge_attr_dict=edge_attr_dict,
