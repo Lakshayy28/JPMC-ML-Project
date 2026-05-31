@@ -44,8 +44,10 @@ gnn:
   weight_decay: 0.0005
   epochs: 120
   patience: 20
+  pos_weight_multiplier: 0.5
+  decision_threshold: 0.7
   checkpoint_name: pytorch_graphsage_model.pt
   loader:
     batch_size: 1024
-    fan_out: [25, 10]
+    fan_out: [15, 5]
     num_workers: 4

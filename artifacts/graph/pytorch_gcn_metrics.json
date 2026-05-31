@@ -1,14 +1,14 @@
 {
-  "average_precision": 0.7880021888332601,
-  "precision": 0.4673768308921438,
-  "recall": 0.7782705099778271,
-  "f1": 0.5840266222961731,
-  "roc_auc": 0.9113262387045421,
+  "average_precision": 0.7812665409513693,
+  "precision": 0.9326599326599326,
+  "recall": 0.614190687361419,
+  "f1": 0.7406417112299465,
+  "roc_auc": 0.9101998002533632,
   "train_rows": 10000,
   "validation_rows": 5000,
   "test_rows": 5000,
-  "best_epoch": 75,
-  "best_validation_average_precision": 0.7658186371067424,
+  "best_epoch": 28,
+  "best_validation_average_precision": 0.7660561260593375,
   "model_name": "pytorch_graphsage",
   "loader_backend": "k_hop_fallback",
   "device": "cpu",
@@ -30,7 +30,9 @@
   "checkpoint_path": "/Users/lakshaychandra/JPMC ML Project/artifacts/graph/pytorch_graphsage_model.pt",
   "batch_size": 1024,
   "fan_out": [
-    25,
-    10
-  ]
+    15,
+    5
+  ],
+  "pos_weight_multiplier": 0.5,
+  "decision_threshold": 0.7
 }

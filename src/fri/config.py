@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 
 import yaml
@@ -68,9 +68,11 @@ class GNNSettings:
     weight_decay: float = 0.0005
     epochs: int = 120
     patience: int = 20
+    pos_weight_multiplier: float = 1.0
+    decision_threshold: float = 0.5
     checkpoint_name: str = "pytorch_graphsage_model.pt"
     loader_batch_size: int = 1024
-    loader_fan_out: tuple[int, ...] = (25, 10)
+    loader_fan_out: tuple[int, ...] = (15, 5)
     loader_num_workers: int = 4
 
 
@@ -160,9 +162,11 @@ def load_settings(config_path: str | Path | None = None) -> Settings:
             weight_decay=float(gnn_payload.get("weight_decay", 0.0005)),
             epochs=int(gnn_payload.get("epochs", 120)),
             patience=int(gnn_payload.get("patience", 20)),
+            pos_weight_multiplier=float(gnn_payload.get("pos_weight_multiplier", 1.0)),
+            decision_threshold=float(gnn_payload.get("decision_threshold", 0.5)),
             checkpoint_name=str(gnn_payload.get("checkpoint_name", "pytorch_graphsage_model.pt")),
             loader_batch_size=int(gnn_loader_payload.get("batch_size", 1024)),
-            loader_fan_out=tuple(int(value) for value in gnn_loader_payload.get("fan_out", [25, 10])),
+            loader_fan_out=tuple(int(value) for value in gnn_loader_payload.get("fan_out", [15, 5])),
             loader_num_workers=int(gnn_loader_payload.get("num_workers", 4)),
         ),
     )

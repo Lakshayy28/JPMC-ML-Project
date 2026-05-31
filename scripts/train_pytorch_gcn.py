@@ -11,7 +11,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
 from fri.config import load_settings
-from fri.models.pytorch_gnn import build_pyg_graph_data_from_archive, resolve_training_device, train_pyg_minibatch
+from fri.models.pytorch_gnn import build_pyg_graph_data_from_archive, resolve_training_device, train_pytorch_gcn
 
 
 def main() -> None:
@@ -29,7 +29,7 @@ def main() -> None:
     output_dir = settings.graph.output_root
     output_dir.mkdir(parents=True, exist_ok=True)
     checkpoint_path = output_dir / settings.gnn.checkpoint_name
-    metrics = train_pyg_minibatch(
+    metrics = train_pytorch_gcn(
         graph_bundle.data,
         feature_columns=graph_bundle.feature_columns,
         hidden_dim=settings.gnn.hidden_dim,
@@ -44,6 +44,8 @@ def main() -> None:
         device=device,
         pin_memory=settings.hardware.pin_memory,
         checkpoint_path=checkpoint_path,
+        pos_weight_multiplier=settings.gnn.pos_weight_multiplier,
+        decision_threshold=settings.gnn.decision_threshold,
         random_state=settings.models.random_state,
         test_size=settings.models.test_size,
     )

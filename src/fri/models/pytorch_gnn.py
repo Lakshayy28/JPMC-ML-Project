@@ -320,6 +320,7 @@ def _evaluate_minibatch(
     criterion: nn.Module,
     *,
     device: torch.device,
+    decision_threshold: float,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, float]:
     labels: list[np.ndarray] = []
     probabilities: list[np.ndarray] = []
@@ -336,7 +337,7 @@ def _evaluate_minibatch(
             seed_labels = batch.y[seed_index]
             loss = criterion(logits, seed_labels)
             batch_probabilities = torch.softmax(logits, dim=1)[:, 1].cpu().numpy()
-            batch_predictions = torch.argmax(logits, dim=1).cpu().numpy()
+            batch_predictions = (batch_probabilities >= decision_threshold).astype(np.int64)
             batch_labels = seed_labels.cpu().numpy()
 
             labels.append(batch_labels)
@@ -436,6 +437,8 @@ def train_pyg_minibatch(
     device: torch.device | None = None,
     pin_memory: bool = True,
     checkpoint_path: str | Path | None = None,
+    pos_weight_multiplier: float = 1.0,
+    decision_threshold: float = 0.5,
     random_state: int = 42,
     test_size: float = 0.25,
 ) -> dict[str, float | int | None | str | list[str]]:
@@ -483,7 +486,11 @@ def train_pyg_minibatch(
     class_counts = np.bincount(labels_array[train_idx], minlength=2)
     negative_count = max(int(class_counts[0]), 1)
     positive_count = max(int(class_counts[1]), 1)
-    class_weights = torch.tensor([1.0, negative_count / positive_count], dtype=torch.float32, device=resolved_device)
+    class_weights = torch.tensor(
+        [1.0, (negative_count / positive_count) * pos_weight_multiplier],
+        dtype=torch.float32,
+        device=resolved_device,
+    )
 
     model = GraphSAGE(
         input_dim=int(normalized_data.num_node_features),
@@ -521,6 +528,7 @@ def train_pyg_minibatch(
             val_loader,
             criterion,
             device=resolved_device,
+            decision_threshold=decision_threshold,
         )
         selection_score, val_average_precision = _selection_score(val_labels, val_probabilities, val_loss)
 
@@ -549,6 +557,7 @@ def train_pyg_minibatch(
         test_loader,
         criterion,
         device=resolved_device,
+        decision_threshold=decision_threshold,
     )
 
     metrics = _classification_metrics(test_labels, test_probabilities, test_predictions)
@@ -576,6 +585,8 @@ def train_pyg_minibatch(
             "checkpoint_path": str(checkpoint_file) if checkpoint_file is not None else None,
             "batch_size": int(batch_size),
             "fan_out": [int(value) for value in fan_out],
+            "pos_weight_multiplier": float(pos_weight_multiplier),
+            "decision_threshold": float(decision_threshold),
         }
     )
     return payload
@@ -597,6 +608,8 @@ def train_pytorch_gcn(
     device: torch.device | None = None,
     pin_memory: bool = True,
     checkpoint_path: str | Path | None = None,
+    pos_weight_multiplier: float = 1.0,
+    decision_threshold: float = 0.5,
     random_state: int = 42,
     test_size: float = 0.25,
 ) -> dict[str, float | int | None | str | list[str]]:
@@ -615,6 +628,8 @@ def train_pytorch_gcn(
         device=device,
         pin_memory=pin_memory,
         checkpoint_path=checkpoint_path,
+        pos_weight_multiplier=pos_weight_multiplier,
+        decision_threshold=decision_threshold,
         random_state=random_state,
         test_size=test_size,
     )
