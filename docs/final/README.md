@@ -12,7 +12,7 @@ Each section is designed to stand on its own while contributing to a coherent, e
 
 ## Documentation Registry
 
-The comprehensive system documentation is organized into the following four modules:
+The comprehensive system documentation is organized into the following five modules:
 
 ### 1. [01_System_Architecture.md](01_System_Architecture.md)
 **High-Level Architecture and Flow Analysis**
@@ -44,6 +44,13 @@ The comprehensive system documentation is organized into the following four modu
 *   **Operational Logging:** Persistent JSONL event telemetry logging.
 *   **Metrics Service:** Live Prometheus telemetry instrumentation.
 *   **Interactive Runbook:** Step-by-step developer guide for starting, validating, calling, and stopping the containerized service.
+
+### 5. [05_Real_Time_Fraud_Scenario.md](05_Real_Time_Fraud_Scenario.md)
+**Visual Mule-Account Case Study and Model Decision Walkthrough**
+*   **Real Case Narrative:** A repository-backed case study built around confirmed fraud account `19204`.
+*   **Visual Network Graphs:** Mermaid diagrams showing the suspicious multi-account funding pattern, repeated counterparty reuse, and derived merchant-linked entities.
+*   **Model Evidence:** Explanation of how the live Hetero GAT identifies the fraud through feature attributions, graph structure, and high-importance transfer edges.
+*   **Analyst Interpretation:** Translation of model signals into a practical mule-account investigation story suitable for engineering, audit, or fraud-ops review.
 
 ---
 
