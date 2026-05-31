@@ -1,7 +1,14 @@
 dataset:
   raw_root: data/external/AMLSim
   processed_root: data/processed/amlsim
-  sample_preferred: true
+  sample_preferred: false
+  graph_archive: data/external/AMLSim/sample/20K_fanin200cycle200.tgz
+  archive_chunksize: 50000
+
+hardware:
+  use_cuda: true
+  device: auto
+  pin_memory: true
 
 enrichment:
   seed: 17
@@ -29,10 +36,16 @@ graph:
   embedding_dimensions: 16
 
 gnn:
-  feature_source: combined
+  architecture: graphsage
+  feature_source: archive_stream
   hidden_dim: 64
   dropout: 0.3
   learning_rate: 0.01
   weight_decay: 0.0005
   epochs: 120
   patience: 20
+  checkpoint_name: pytorch_graphsage_model.pt
+  loader:
+    batch_size: 1024
+    fan_out: [25, 10]
+    num_workers: 4

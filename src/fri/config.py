@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 import yaml
@@ -14,6 +14,15 @@ class DatasetSettings:
     raw_root: Path
     processed_root: Path
     sample_preferred: bool = True
+    graph_archive: Path | None = None
+    archive_chunksize: int = 50_000
+
+
+@dataclass(frozen=True)
+class HardwareSettings:
+    use_cuda: bool = True
+    device: str = "auto"
+    pin_memory: bool = True
 
 
 @dataclass(frozen=True)
@@ -51,18 +60,24 @@ class GraphSettings:
 
 @dataclass(frozen=True)
 class GNNSettings:
-    feature_source: str = "combined"
+    feature_source: str = "archive_stream"
+    architecture: str = "graphsage"
     hidden_dim: int = 64
     dropout: float = 0.3
     learning_rate: float = 0.01
     weight_decay: float = 0.0005
     epochs: int = 120
     patience: int = 20
+    checkpoint_name: str = "pytorch_graphsage_model.pt"
+    loader_batch_size: int = 1024
+    loader_fan_out: tuple[int, ...] = (25, 10)
+    loader_num_workers: int = 4
 
 
 @dataclass(frozen=True)
 class Settings:
     dataset: DatasetSettings
+    hardware: HardwareSettings
     enrichment: EnrichmentSettings
     models: ModelSettings
     temporal: TemporalSettings
@@ -83,17 +98,31 @@ def load_settings(config_path: str | Path | None = None) -> Settings:
         payload = yaml.safe_load(handle) or {}
 
     dataset_payload = payload.get("dataset", {})
+    hardware_payload = payload.get("hardware", {})
     enrichment_payload = payload.get("enrichment", {})
     model_payload = payload.get("models", {})
     temporal_payload = payload.get("temporal", {})
     graph_payload = payload.get("graph", {})
     gnn_payload = payload.get("gnn", {})
+    gnn_loader_payload = gnn_payload.get("loader", {})
 
     return Settings(
         dataset=DatasetSettings(
             raw_root=_resolve_path(dataset_payload.get("raw_root", "data/external/AMLSim")),
             processed_root=_resolve_path(dataset_payload.get("processed_root", "data/processed/amlsim")),
             sample_preferred=bool(dataset_payload.get("sample_preferred", True)),
+            graph_archive=_resolve_path(
+                dataset_payload.get(
+                    "graph_archive",
+                    graph_payload.get("archive_sample", "data/external/AMLSim/sample/20K_fanin200cycle200.tgz"),
+                )
+            ),
+            archive_chunksize=int(dataset_payload.get("archive_chunksize", 50_000)),
+        ),
+        hardware=HardwareSettings(
+            use_cuda=bool(hardware_payload.get("use_cuda", True)),
+            device=str(hardware_payload.get("device", "auto")),
+            pin_memory=bool(hardware_payload.get("pin_memory", True)),
         ),
         enrichment=EnrichmentSettings(
             seed=int(enrichment_payload.get("seed", 17)),
@@ -123,12 +152,17 @@ def load_settings(config_path: str | Path | None = None) -> Settings:
             embedding_dimensions=int(graph_payload.get("embedding_dimensions", 16)),
         ),
         gnn=GNNSettings(
-            feature_source=str(gnn_payload.get("feature_source", "combined")),
+            feature_source=str(gnn_payload.get("feature_source", "archive_stream")),
+            architecture=str(gnn_payload.get("architecture", "graphsage")),
             hidden_dim=int(gnn_payload.get("hidden_dim", 64)),
             dropout=float(gnn_payload.get("dropout", 0.3)),
             learning_rate=float(gnn_payload.get("learning_rate", 0.01)),
             weight_decay=float(gnn_payload.get("weight_decay", 0.0005)),
             epochs=int(gnn_payload.get("epochs", 120)),
             patience=int(gnn_payload.get("patience", 20)),
+            checkpoint_name=str(gnn_payload.get("checkpoint_name", "pytorch_graphsage_model.pt")),
+            loader_batch_size=int(gnn_loader_payload.get("batch_size", 1024)),
+            loader_fan_out=tuple(int(value) for value in gnn_loader_payload.get("fan_out", [25, 10])),
+            loader_num_workers=int(gnn_loader_payload.get("num_workers", 4)),
         ),
     )

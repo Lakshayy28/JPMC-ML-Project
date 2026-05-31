@@ -13,6 +13,8 @@ dependencies = [
   "pandas>=2.2",
   "PyYAML>=6.0",
   "scikit-learn>=1.5",
+  "torch>=2.8",
+  "torch-geometric>=2.7",
 ]
 
 [project.optional-dependencies]
