@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 import copy
-from collections.abc import Iterable, Iterator, Sequence
+from collections.abc import Sequence
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -13,19 +12,19 @@ from sklearn.metrics import average_precision_score, f1_score, precision_score, 
 from sklearn.model_selection import train_test_split
 from torch import nn
 from torch.nn import functional as F
-from torch_geometric.data import Data
-from torch_geometric.loader import NeighborLoader
-from torch_geometric.nn import SAGEConv
-from torch_geometric.typing import WITH_PYG_LIB, WITH_TORCH_SPARSE
-from torch_geometric.utils import k_hop_subgraph, to_undirected
+from torch_geometric.data import HeteroData
+from torch_geometric.nn import GATConv, HeteroConv
 
-from fri.data.loaders import stream_archive_graph_nodes, stream_archive_graph_transactions
+from fri.graph.io import load_archive_graph_data
+from fri.graph.service import build_archive_feature_bundle
 
 
 @dataclass(frozen=True)
 class PYGGraphBundle:
-    data: Data
+    data: HeteroData
     feature_columns: tuple[str, ...]
+    merchant_feature_columns: tuple[str, ...]
+    edge_feature_columns: tuple[str, ...]
 
 
 @dataclass(frozen=True)
@@ -40,66 +39,82 @@ class GNNResult:
     test_rows: int
     best_epoch: int
     best_validation_average_precision: float | None
+    best_validation_f1: float | None
+    optimal_threshold: float
 
 
-class GraphSAGE(nn.Module):
-    def __init__(self, input_dim: int, hidden_dim: int, output_dim: int = 2, dropout: float = 0.3) -> None:
-        super().__init__()
-        self.conv1 = SAGEConv(input_dim, hidden_dim)
-        self.conv2 = SAGEConv(hidden_dim, output_dim)
-        self.dropout = dropout
-
-    def forward(self, x: torch.Tensor, edge_index: torch.Tensor) -> torch.Tensor:
-        x = self.conv1(x, edge_index)
-        x = F.relu(x)
-        x = F.dropout(x, p=self.dropout, training=self.training)
-        return self.conv2(x, edge_index)
-
-
-class _FallbackNeighborLoader:
+class SpatialTemporalHeteroGAT(nn.Module):
     def __init__(
         self,
-        data: Data,
-        input_nodes: torch.Tensor,
+        account_input_dim: int,
+        merchant_input_dim: int,
+        edge_dim: int,
+        hidden_dim: int,
         *,
-        batch_size: int,
-        fan_out: Sequence[int],
-        shuffle: bool,
+        output_dim: int = 2,
+        dropout: float = 0.3,
+        heads: int = 4,
     ) -> None:
-        self.data = data
-        self.input_nodes = input_nodes.cpu()
-        self.batch_size = batch_size
-        self.num_hops = len(fan_out)
-        self.shuffle = shuffle
+        super().__init__()
+        self.account_encoder = nn.Linear(account_input_dim, hidden_dim)
+        self.merchant_encoder = nn.Linear(merchant_input_dim, hidden_dim)
+        self.dropout = dropout
+        self.convs = nn.ModuleList(
+            [
+                self._build_conv(hidden_dim, edge_dim=edge_dim, heads=heads),
+                self._build_conv(hidden_dim, edge_dim=edge_dim, heads=heads),
+            ]
+        )
+        self.classifier = nn.Linear(hidden_dim, output_dim)
 
-    def __iter__(self) -> Iterator[Data]:
-        if self.shuffle:
-            order = torch.randperm(self.input_nodes.numel())
-            nodes = self.input_nodes[order]
-        else:
-            nodes = self.input_nodes
+    @staticmethod
+    def _build_conv(hidden_dim: int, *, edge_dim: int, heads: int) -> HeteroConv:
+        return HeteroConv(
+            {
+                ("account", "transfers", "account"): GATConv(
+                    (hidden_dim, hidden_dim),
+                    hidden_dim,
+                    heads=heads,
+                    concat=False,
+                    edge_dim=edge_dim,
+                    add_self_loops=False,
+                ),
+                ("account", "buys_from", "merchant"): GATConv(
+                    (hidden_dim, hidden_dim),
+                    hidden_dim,
+                    heads=heads,
+                    concat=False,
+                    edge_dim=edge_dim,
+                    add_self_loops=False,
+                ),
+                ("merchant", "rev_buys_from", "account"): GATConv(
+                    (hidden_dim, hidden_dim),
+                    hidden_dim,
+                    heads=heads,
+                    concat=False,
+                    edge_dim=edge_dim,
+                    add_self_loops=False,
+                ),
+            },
+            aggr="sum",
+        )
 
-        for seed_nodes in torch.split(nodes, self.batch_size):
-            subset, edge_index, mapping, _ = k_hop_subgraph(
-                seed_nodes,
-                self.num_hops,
-                self.data.edge_index,
-                relabel_nodes=True,
-                num_nodes=self.data.num_nodes,
-            )
-            batch = Data(
-                x=self.data.x[subset],
-                edge_index=edge_index,
-                y=self.data.y[subset],
-                n_id=subset,
-                node_id=self.data.node_id[subset],
-            )
-            batch.batch_size = int(seed_nodes.numel())
-            batch.seed_node_index = mapping
-            yield batch
+    def forward(self, data: HeteroData) -> torch.Tensor:
+        x_dict = {
+            "account": self.account_encoder(data["account"].x),
+            "merchant": self.merchant_encoder(data["merchant"].x),
+        }
+        edge_attr_dict = {edge_type: data[edge_type].edge_attr for edge_type in data.edge_types}
 
-    def __len__(self) -> int:
-        return int(np.ceil(self.input_nodes.numel() / self.batch_size))
+        for conv in self.convs:
+            x_dict = conv(x_dict, data.edge_index_dict, edge_attr_dict=edge_attr_dict)
+            x_dict = {node_type: F.elu(features) for node_type, features in x_dict.items()}
+            x_dict = {
+                node_type: F.dropout(features, p=self.dropout, training=self.training)
+                for node_type, features in x_dict.items()
+            }
+
+        return self.classifier(x_dict["account"])
 
 
 def resolve_training_device(*, use_cuda: bool = True, requested_device: str = "auto") -> torch.device:
@@ -112,247 +127,178 @@ def resolve_training_device(*, use_cuda: bool = True, requested_device: str = "a
     return requested
 
 
-def _validate_columns(frame: pd.DataFrame, required_columns: set[str], *, label: str) -> None:
-    missing_columns = required_columns.difference(frame.columns)
-    if missing_columns:
-        missing_display = ", ".join(sorted(missing_columns))
-        raise ValueError(f"{label} is missing required columns: {missing_display}")
+def _build_hetero_graph_bundle(feature_bundle: dict[str, object]) -> PYGGraphBundle:
+    account_frame = (
+        feature_bundle["node_features"]
+        if isinstance(feature_bundle["node_features"], pd.DataFrame)
+        else pd.DataFrame()
+    )
+    merchant_frame = (
+        feature_bundle["merchant_features"]
+        if isinstance(feature_bundle["merchant_features"], pd.DataFrame)
+        else pd.DataFrame()
+    )
+    transfer_frame = (
+        feature_bundle["normalized_transactions"]
+        if isinstance(feature_bundle["normalized_transactions"], pd.DataFrame)
+        else pd.DataFrame()
+    )
+    merchant_links = (
+        feature_bundle["merchant_links"]
+        if isinstance(feature_bundle["merchant_links"], pd.DataFrame)
+        else pd.DataFrame()
+    )
 
+    if account_frame.empty:
+        raise ValueError("Account feature frame is empty; cannot build a hetero graph bundle")
+    if merchant_frame.empty:
+        raise ValueError("Merchant feature frame is empty; cannot build a hetero graph bundle")
+    if transfer_frame.empty:
+        raise ValueError("Transfer edge frame is empty; cannot build a hetero graph bundle")
+    if merchant_links.empty:
+        raise ValueError("Merchant interaction frame is empty; cannot build a hetero graph bundle")
 
-def _collect_node_frame(node_chunks: Iterable[pd.DataFrame]) -> pd.DataFrame:
-    frames: list[pd.DataFrame] = []
-    for chunk in node_chunks:
-        _validate_columns(chunk, {"nodeid", "isFraud", "init_balance", "fraudStep"}, label="Archive node chunk")
-        frames.append(
-            chunk[["nodeid", "isFraud", "init_balance", "fraudStep"]].rename(
-                columns={
-                    "nodeid": "node_id",
-                    "isFraud": "is_fraud",
-                    "init_balance": "initial_balance",
-                    "fraudStep": "fraud_step",
-                }
-            )
-        )
+    account_frame = account_frame.sort_values("node_id").reset_index(drop=True)
+    merchant_frame = merchant_frame.sort_values("merchant_id").reset_index(drop=True)
 
-    if not frames:
-        raise ValueError("No node chunks were available to build the PyG graph bundle")
+    account_feature_columns = tuple(
+        column for column in account_frame.columns if column not in {"node_id", "is_fraud", "fraud_step"}
+    )
+    merchant_feature_columns = tuple(column for column in merchant_frame.columns if column != "merchant_id")
+    edge_feature_columns = ("amount", "event_time", "transaction_type_code")
 
-    node_frame = pd.concat(frames, ignore_index=True)
-    if node_frame["node_id"].duplicated().any():
-        raise ValueError("Archive nodes contain duplicate node identifiers")
+    account_ids = account_frame["node_id"].astype(int).to_numpy(copy=True)
+    account_index = {node_id: index for index, node_id in enumerate(account_ids)}
+    merchant_ids = merchant_frame["merchant_id"].astype(str).tolist()
+    merchant_index = {merchant_id: index for index, merchant_id in enumerate(merchant_ids)}
 
-    return node_frame.sort_values("node_id").reset_index(drop=True)
-
-
-def _build_pyg_graph_bundle(node_frame: pd.DataFrame, transaction_chunks: Iterable[pd.DataFrame]) -> PYGGraphBundle:
-    node_ids = node_frame["node_id"].astype(int).to_numpy(copy=True)
-    num_nodes = len(node_ids)
-    node_index = {node_id: index for index, node_id in enumerate(node_ids)}
-
-    in_counts = np.zeros(num_nodes, dtype=np.float32)
-    out_counts = np.zeros(num_nodes, dtype=np.float32)
-    in_amounts = np.zeros(num_nodes, dtype=np.float32)
-    out_amounts = np.zeros(num_nodes, dtype=np.float32)
-    first_in_time = np.full(num_nodes, np.inf, dtype=np.float32)
-    last_in_time = np.full(num_nodes, -np.inf, dtype=np.float32)
-    first_out_time = np.full(num_nodes, np.inf, dtype=np.float32)
-    last_out_time = np.full(num_nodes, -np.inf, dtype=np.float32)
-    edge_sources: list[np.ndarray] = []
-    edge_targets: list[np.ndarray] = []
-
-    for chunk in transaction_chunks:
-        _validate_columns(chunk, {"sourceNodeId", "targetNodeId", "value", "time"}, label="Archive transaction chunk")
-        work = chunk[["sourceNodeId", "targetNodeId", "value", "time"]].copy()
-        work = work.dropna(subset=["sourceNodeId", "targetNodeId", "value", "time"])
-        if work.empty:
-            continue
-
-        source_index = work["sourceNodeId"].map(node_index)
-        target_index = work["targetNodeId"].map(node_index)
-        valid_mask = source_index.notna() & target_index.notna()
-        if not valid_mask.any():
-            continue
-
-        source_nodes = source_index[valid_mask].astype(np.int64).to_numpy()
-        target_nodes = target_index[valid_mask].astype(np.int64).to_numpy()
-        values = pd.to_numeric(work.loc[valid_mask, "value"], errors="coerce").fillna(0.0).to_numpy(dtype=np.float32)
-        times = pd.to_numeric(work.loc[valid_mask, "time"], errors="coerce").fillna(0.0).to_numpy(dtype=np.float32)
-
-        edge_sources.append(source_nodes)
-        edge_targets.append(target_nodes)
-        np.add.at(out_counts, source_nodes, 1.0)
-        np.add.at(in_counts, target_nodes, 1.0)
-        np.add.at(out_amounts, source_nodes, values)
-        np.add.at(in_amounts, target_nodes, values)
-        np.minimum.at(first_out_time, source_nodes, times)
-        np.maximum.at(last_out_time, source_nodes, times)
-        np.minimum.at(first_in_time, target_nodes, times)
-        np.maximum.at(last_in_time, target_nodes, times)
-
-    if not edge_sources:
-        raise ValueError("No valid archive transactions were available to build the PyG graph bundle")
-
-    directed_edge_index = torch.tensor(
-        np.vstack([np.concatenate(edge_sources), np.concatenate(edge_targets)]),
+    transfer_sources = transfer_frame["source_node_id"].map(account_index)
+    transfer_targets = transfer_frame["target_node_id"].map(account_index)
+    transfer_mask = transfer_sources.notna() & transfer_targets.notna()
+    transfer_edge_index = torch.tensor(
+        np.vstack(
+            [
+                transfer_sources.loc[transfer_mask].astype(np.int64).to_numpy(),
+                transfer_targets.loc[transfer_mask].astype(np.int64).to_numpy(),
+            ]
+        ),
         dtype=torch.long,
     )
-    edge_index = to_undirected(directed_edge_index, num_nodes=num_nodes)
-
-    in_amount_mean = np.divide(in_amounts, in_counts, out=np.zeros_like(in_amounts), where=in_counts > 0)
-    out_amount_mean = np.divide(out_amounts, out_counts, out=np.zeros_like(out_amounts), where=out_counts > 0)
-    in_time_span = np.where(np.isfinite(first_in_time), np.maximum(last_in_time - first_in_time, 0.0), 0.0)
-    out_time_span = np.where(np.isfinite(first_out_time), np.maximum(last_out_time - first_out_time, 0.0), 0.0)
-    total_counts = in_counts + out_counts
-    total_amounts = in_amounts + out_amounts
-    net_out_amount = out_amounts - in_amounts
-
-    feature_columns = (
-        "initial_balance",
-        "in_transaction_count",
-        "out_transaction_count",
-        "in_amount_total",
-        "out_amount_total",
-        "in_amount_mean",
-        "out_amount_mean",
-        "in_time_span",
-        "out_time_span",
-        "total_transaction_count",
-        "total_amount",
-        "net_out_amount",
-    )
-    x = np.column_stack(
-        [
-            node_frame["initial_balance"].astype(np.float32).to_numpy(),
-            in_counts,
-            out_counts,
-            in_amounts,
-            out_amounts,
-            in_amount_mean,
-            out_amount_mean,
-            in_time_span.astype(np.float32),
-            out_time_span.astype(np.float32),
-            total_counts,
-            total_amounts,
-            net_out_amount,
-        ]
-    ).astype(np.float32)
-    y = node_frame["is_fraud"].astype(np.int64).to_numpy(copy=True)
-
-    data = Data(
-        x=torch.from_numpy(x),
-        edge_index=edge_index,
-        y=torch.from_numpy(y),
-        node_id=torch.from_numpy(node_ids.astype(np.int64)),
-        fraud_step=torch.from_numpy(node_frame["fraud_step"].astype(np.int64).to_numpy(copy=True)),
-        num_nodes=num_nodes,
-    )
-    return PYGGraphBundle(data=data, feature_columns=feature_columns)
-
-
-def build_pyg_graph_data_from_tables(nodes: pd.DataFrame, transactions: pd.DataFrame) -> PYGGraphBundle:
-    node_frame = _collect_node_frame([nodes])
-    return _build_pyg_graph_bundle(node_frame, [transactions])
-
-
-def build_pyg_graph_data_from_archive(archive_path: str | Path, *, chunksize: int = 100_000) -> PYGGraphBundle:
-    node_frame = _collect_node_frame(stream_archive_graph_nodes(archive_path, chunksize=chunksize))
-    return _build_pyg_graph_bundle(
-        node_frame,
-        stream_archive_graph_transactions(archive_path, chunksize=chunksize),
+    transfer_edge_attr = torch.from_numpy(
+        transfer_frame.loc[transfer_mask, list(edge_feature_columns)].astype(np.float32).to_numpy(copy=True)
     )
 
-
-def _make_neighbor_loader(
-    data: Data,
-    *,
-    input_nodes: torch.Tensor,
-    batch_size: int,
-    fan_out: Sequence[int],
-    num_workers: int,
-    shuffle: bool,
-    pin_memory: bool,
-) -> tuple[object, str]:
-    if WITH_PYG_LIB or WITH_TORCH_SPARSE:
-        return (
-            NeighborLoader(
-                data,
-                num_neighbors=list(fan_out),
-                input_nodes=input_nodes,
-                batch_size=batch_size,
-                shuffle=shuffle,
-                num_workers=num_workers,
-                pin_memory=pin_memory,
-                persistent_workers=num_workers > 0,
-            ),
-            "neighbor_loader",
-        )
-    return (
-        _FallbackNeighborLoader(
-            data,
-            input_nodes,
-            batch_size=batch_size,
-            fan_out=fan_out,
-            shuffle=shuffle,
+    merchant_sources = merchant_links["source_node_id"].map(account_index)
+    merchant_targets = merchant_links["merchant_id"].map(merchant_index)
+    merchant_mask = merchant_sources.notna() & merchant_targets.notna()
+    merchant_edge_index = torch.tensor(
+        np.vstack(
+            [
+                merchant_sources.loc[merchant_mask].astype(np.int64).to_numpy(),
+                merchant_targets.loc[merchant_mask].astype(np.int64).to_numpy(),
+            ]
         ),
-        "k_hop_fallback",
+        dtype=torch.long,
+    )
+    merchant_edge_attr = torch.from_numpy(
+        merchant_links.loc[merchant_mask, list(edge_feature_columns)].astype(np.float32).to_numpy(copy=True)
+    )
+
+    data = HeteroData()
+    data["account"].x = torch.from_numpy(
+        account_frame.loc[:, account_feature_columns].astype(np.float32).to_numpy(copy=True)
+    )
+    data["account"].y = torch.from_numpy(account_frame["is_fraud"].astype(np.int64).to_numpy(copy=True))
+    data["account"].node_id = torch.from_numpy(account_ids.astype(np.int64))
+    data["account"].fraud_step = torch.from_numpy(account_frame["fraud_step"].astype(np.int64).to_numpy(copy=True))
+
+    data["merchant"].x = torch.from_numpy(
+        merchant_frame.loc[:, merchant_feature_columns].astype(np.float32).to_numpy(copy=True)
+    )
+
+    data["account", "transfers", "account"].edge_index = transfer_edge_index
+    data["account", "transfers", "account"].edge_attr = transfer_edge_attr
+    data["account", "buys_from", "merchant"].edge_index = merchant_edge_index
+    data["account", "buys_from", "merchant"].edge_attr = merchant_edge_attr
+    data["merchant", "rev_buys_from", "account"].edge_index = merchant_edge_index.flip(0)
+    data["merchant", "rev_buys_from", "account"].edge_attr = merchant_edge_attr.clone()
+
+    return PYGGraphBundle(
+        data=data,
+        feature_columns=account_feature_columns,
+        merchant_feature_columns=merchant_feature_columns,
+        edge_feature_columns=edge_feature_columns,
     )
 
 
-def _normalize_node_features(data: Data, train_indices: np.ndarray) -> Data:
-    normalized = copy.copy(data)
-    train_x = normalized.x[train_indices]
-    means = train_x.mean(dim=0)
-    stds = train_x.std(dim=0, unbiased=False)
-    stds[stds == 0] = 1.0
-    normalized.x = (normalized.x - means) / stds
-    return normalized
-
-
-def _seed_node_index(batch: Data) -> torch.Tensor:
-    if hasattr(batch, "seed_node_index"):
-        return batch.seed_node_index
-    return torch.arange(batch.batch_size, device=batch.x.device)
-
-
-def _evaluate_minibatch(
-    model: GraphSAGE,
-    loader: object,
-    criterion: nn.Module,
+def build_pyg_graph_data_from_tables(
+    nodes: pd.DataFrame,
+    transactions: pd.DataFrame,
     *,
-    device: torch.device,
-    decision_threshold: float,
-) -> tuple[np.ndarray, np.ndarray, np.ndarray, float]:
-    labels: list[np.ndarray] = []
-    probabilities: list[np.ndarray] = []
-    predictions: list[np.ndarray] = []
-    losses: list[float] = []
-    weights: list[int] = []
-
-    model.eval()
-    with torch.no_grad():
-        for batch in loader:
-            batch = batch.to(device, non_blocking=True)
-            seed_index = _seed_node_index(batch)
-            logits = model(batch.x, batch.edge_index)[seed_index]
-            seed_labels = batch.y[seed_index]
-            loss = criterion(logits, seed_labels)
-            batch_probabilities = torch.softmax(logits, dim=1)[:, 1].cpu().numpy()
-            batch_predictions = (batch_probabilities >= decision_threshold).astype(np.int64)
-            batch_labels = seed_labels.cpu().numpy()
-
-            labels.append(batch_labels)
-            probabilities.append(batch_probabilities)
-            predictions.append(batch_predictions)
-            losses.append(float(loss.item()))
-            weights.append(int(seed_labels.numel()))
-
-    loss_value = float(np.average(losses, weights=weights)) if losses else 0.0
-    return (
-        np.concatenate(labels) if labels else np.array([], dtype=np.int64),
-        np.concatenate(probabilities) if probabilities else np.array([], dtype=np.float32),
-        np.concatenate(predictions) if predictions else np.array([], dtype=np.int64),
-        loss_value,
+    temporal_windows: Sequence[int] = (1, 7, 30),
+    merchant_seed: int = 17,
+    merchant_pool_size: int = 24,
+    include_communities: bool = True,
+    community_seed: int = 42,
+) -> PYGGraphBundle:
+    feature_bundle = build_archive_feature_bundle(
+        nodes,
+        transactions,
+        temporal_windows=temporal_windows,
+        merchant_seed=merchant_seed,
+        merchant_pool_size=merchant_pool_size,
+        include_communities=include_communities,
+        community_seed=community_seed,
+        include_embeddings=False,
     )
+    return _build_hetero_graph_bundle(feature_bundle)
+
+
+def build_pyg_graph_data_from_archive(
+    archive_path: str | Path,
+    *,
+    chunksize: int = 100_000,
+    temporal_windows: Sequence[int] = (1, 7, 30),
+    merchant_seed: int = 17,
+    merchant_pool_size: int = 24,
+    include_communities: bool = True,
+    community_seed: int = 42,
+) -> PYGGraphBundle:
+    del chunksize
+    archive_data = load_archive_graph_data(archive_path)
+    return build_pyg_graph_data_from_tables(
+        archive_data.nodes,
+        archive_data.transactions,
+        temporal_windows=temporal_windows,
+        merchant_seed=merchant_seed,
+        merchant_pool_size=merchant_pool_size,
+        include_communities=include_communities,
+        community_seed=community_seed,
+    )
+
+
+def _normalize_tensor(matrix: torch.Tensor) -> torch.Tensor:
+    if matrix.numel() == 0:
+        return matrix
+    means = matrix.mean(dim=0)
+    stds = matrix.std(dim=0, unbiased=False)
+    stds[stds == 0] = 1.0
+    return (matrix - means) / stds
+
+
+def _normalize_hetero_data(data: HeteroData, train_indices: torch.Tensor) -> HeteroData:
+    normalized = copy.deepcopy(data)
+    account_train_x = normalized["account"].x[train_indices]
+    train_means = account_train_x.mean(dim=0)
+    train_stds = account_train_x.std(dim=0, unbiased=False)
+    train_stds[train_stds == 0] = 1.0
+    normalized["account"].x = (normalized["account"].x - train_means) / train_stds
+    normalized["merchant"].x = _normalize_tensor(normalized["merchant"].x)
+
+    for edge_type in normalized.edge_types:
+        normalized[edge_type].edge_attr = _normalize_tensor(normalized[edge_type].edge_attr)
+
+    return normalized
 
 
 def _can_stratify(labels: np.ndarray, *, test_size: float) -> bool:
@@ -392,39 +338,80 @@ def _split_indices(labels: np.ndarray, *, test_size: float, random_state: int) -
     return train_indices, validation_indices, test_indices
 
 
-def _classification_metrics(y_true: np.ndarray, probabilities: np.ndarray, predictions: np.ndarray) -> dict[str, float | None]:
-    def metric_or_none(metric, *args, **kwargs):
-        try:
-            return float(metric(*args, **kwargs))
-        except ValueError:
-            return None
+def _metric_or_none(metric, *args, **kwargs) -> float | None:
+    try:
+        return float(metric(*args, **kwargs))
+    except ValueError:
+        return None
 
+
+def _classification_metrics(y_true: np.ndarray, probabilities: np.ndarray, predictions: np.ndarray) -> dict[str, float | None]:
     unique_labels = np.unique(y_true)
     return {
-        "average_precision": metric_or_none(average_precision_score, y_true, probabilities)
+        "average_precision": _metric_or_none(average_precision_score, y_true, probabilities)
         if 1 in unique_labels
         else None,
-        "precision": metric_or_none(precision_score, y_true, predictions, zero_division=0),
-        "recall": metric_or_none(recall_score, y_true, predictions, zero_division=0),
-        "f1": metric_or_none(f1_score, y_true, predictions, zero_division=0),
-        "roc_auc": metric_or_none(roc_auc_score, y_true, probabilities) if len(unique_labels) > 1 else None,
+        "precision": _metric_or_none(precision_score, y_true, predictions, zero_division=0),
+        "recall": _metric_or_none(recall_score, y_true, predictions, zero_division=0),
+        "f1": _metric_or_none(f1_score, y_true, predictions, zero_division=0),
+        "roc_auc": _metric_or_none(roc_auc_score, y_true, probabilities) if len(unique_labels) > 1 else None,
     }
 
 
-def _selection_score(labels: np.ndarray, probabilities: np.ndarray, loss_value: float) -> tuple[float, float | None]:
-    if 1 not in np.unique(labels):
-        return -loss_value, None
-    try:
-        average_precision = float(average_precision_score(labels, probabilities))
-    except ValueError:
-        average_precision = None
-    return (average_precision if average_precision is not None else -loss_value), average_precision
+def _average_precision_or_none(labels: np.ndarray, probabilities: np.ndarray) -> float | None:
+    if labels.size == 0 or 1 not in np.unique(labels):
+        return None
+    return _metric_or_none(average_precision_score, labels, probabilities)
+
+
+def _optimal_threshold(
+    labels: np.ndarray,
+    probabilities: np.ndarray,
+    *,
+    default_threshold: float,
+) -> tuple[float, float | None]:
+    if labels.size == 0:
+        return float(default_threshold), None
+
+    thresholds = np.linspace(0.05, 0.95, 19)
+    best_f1 = -1.0
+    optimal_threshold = float(default_threshold)
+
+    for threshold in thresholds:
+        current_predictions = (probabilities >= threshold).astype(np.int64)
+        current_f1 = float(f1_score(labels, current_predictions, zero_division=0))
+        if current_f1 > best_f1:
+            best_f1 = current_f1
+            optimal_threshold = float(threshold)
+
+    return optimal_threshold, (best_f1 if best_f1 >= 0.0 else None)
+
+
+def _evaluate_full_batch(
+    model: SpatialTemporalHeteroGAT,
+    data: HeteroData,
+    criterion: nn.Module,
+    indices: torch.Tensor,
+    *,
+    decision_threshold: float,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, float]:
+    model.eval()
+    with torch.no_grad():
+        logits = model(data)[indices]
+        labels = data["account"].y[indices]
+        loss = criterion(logits, labels)
+        probabilities = torch.softmax(logits, dim=1)[:, 1].detach().cpu().numpy()
+        predictions = (probabilities >= decision_threshold).astype(np.int64)
+        label_array = labels.detach().cpu().numpy()
+    return label_array, probabilities, predictions, float(loss.item())
 
 
 def train_pyg_minibatch(
-    data: Data,
+    data: HeteroData,
     *,
     feature_columns: Sequence[str] | None = None,
+    merchant_feature_columns: Sequence[str] | None = None,
+    edge_feature_columns: Sequence[str] | None = None,
     hidden_dim: int = 64,
     dropout: float = 0.3,
     learning_rate: float = 0.01,
@@ -442,46 +429,24 @@ def train_pyg_minibatch(
     random_state: int = 42,
     test_size: float = 0.25,
 ) -> dict[str, float | int | None | str | list[str]]:
+    del batch_size
+    del fan_out
+    del num_workers
+
     torch.manual_seed(random_state)
     np.random.seed(random_state)
 
     resolved_device = device or torch.device("cpu")
-    labels_array = data.y.cpu().numpy()
+    labels_array = data["account"].y.cpu().numpy()
     train_idx, val_idx, test_idx = _split_indices(labels_array, test_size=test_size, random_state=random_state)
-    normalized_data = _normalize_node_features(data, train_idx)
+    normalized_data = _normalize_hetero_data(data, torch.tensor(train_idx, dtype=torch.long))
     if pin_memory and resolved_device.type == "cuda":
         normalized_data = normalized_data.pin_memory()
+    normalized_data = normalized_data.to(resolved_device, non_blocking=True)
 
-    train_index_tensor = torch.tensor(train_idx, dtype=torch.long)
-    val_index_tensor = torch.tensor(val_idx, dtype=torch.long)
-    test_index_tensor = torch.tensor(test_idx, dtype=torch.long)
-    train_loader, loader_backend = _make_neighbor_loader(
-        normalized_data,
-        input_nodes=train_index_tensor,
-        batch_size=batch_size,
-        fan_out=fan_out,
-        num_workers=num_workers,
-        shuffle=True,
-        pin_memory=pin_memory and resolved_device.type == "cuda",
-    )
-    val_loader, _ = _make_neighbor_loader(
-        normalized_data,
-        input_nodes=val_index_tensor,
-        batch_size=batch_size,
-        fan_out=fan_out,
-        num_workers=num_workers,
-        shuffle=False,
-        pin_memory=pin_memory and resolved_device.type == "cuda",
-    )
-    test_loader, _ = _make_neighbor_loader(
-        normalized_data,
-        input_nodes=test_index_tensor,
-        batch_size=batch_size,
-        fan_out=fan_out,
-        num_workers=num_workers,
-        shuffle=False,
-        pin_memory=pin_memory and resolved_device.type == "cuda",
-    )
+    train_index_tensor = torch.tensor(train_idx, dtype=torch.long, device=resolved_device)
+    val_index_tensor = torch.tensor(val_idx, dtype=torch.long, device=resolved_device)
+    test_index_tensor = torch.tensor(test_idx, dtype=torch.long, device=resolved_device)
 
     class_counts = np.bincount(labels_array[train_idx], minlength=2)
     negative_count = max(int(class_counts[0]), 1)
@@ -492,10 +457,11 @@ def train_pyg_minibatch(
         device=resolved_device,
     )
 
-    model = GraphSAGE(
-        input_dim=int(normalized_data.num_node_features),
+    model = SpatialTemporalHeteroGAT(
+        account_input_dim=int(normalized_data["account"].x.shape[1]),
+        merchant_input_dim=int(normalized_data["merchant"].x.shape[1]),
+        edge_dim=int(normalized_data["account", "transfers", "account"].edge_attr.shape[1]),
         hidden_dim=hidden_dim,
-        output_dim=2,
         dropout=dropout,
     ).to(resolved_device)
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
@@ -508,39 +474,52 @@ def train_pyg_minibatch(
     best_state: dict[str, torch.Tensor] | None = None
     best_epoch = 0
     best_val_ap: float | None = None
+    best_val_f1: float | None = None
     best_selection_score = float("-inf")
+    best_threshold = float(decision_threshold)
     patience_counter = 0
 
     for epoch in range(1, epochs + 1):
         model.train()
-        last_batch_loss = 0.0
-        for batch in train_loader:
-            optimizer.zero_grad(set_to_none=True)
-            batch = batch.to(resolved_device, non_blocking=True)
-            seed_index = _seed_node_index(batch)
-            logits = model(batch.x, batch.edge_index)[seed_index]
-            labels = batch.y[seed_index]
-            loss = criterion(logits, labels)
-            loss.backward()
-            optimizer.step()
-            last_batch_loss = float(loss.item())
+        optimizer.zero_grad(set_to_none=True)
+        logits = model(normalized_data)
+        train_logits = logits[train_index_tensor]
+        train_labels = normalized_data["account"].y[train_index_tensor]
+        loss = criterion(train_logits, train_labels)
+        loss.backward()
+        optimizer.step()
 
-        val_labels, val_probabilities, _, val_loss = _evaluate_minibatch(
+        val_labels, val_probabilities, _, val_loss = _evaluate_full_batch(
             model,
-            val_loader,
+            normalized_data,
             criterion,
-            device=resolved_device,
+            val_index_tensor,
             decision_threshold=decision_threshold,
         )
-        selection_score, val_average_precision = _selection_score(val_labels, val_probabilities, val_loss)
+        optimal_threshold, val_f1 = _optimal_threshold(
+            val_labels,
+            val_probabilities,
+            default_threshold=decision_threshold,
+        )
+        selection_score = float(val_f1) if val_f1 is not None else -val_loss
+        val_average_precision = _average_precision_or_none(val_labels, val_probabilities)
 
         if selection_score > best_selection_score:
             best_selection_score = selection_score
             best_val_ap = val_average_precision
+            best_val_f1 = val_f1
+            best_threshold = optimal_threshold
             best_epoch = epoch
             best_state = copy.deepcopy(model.state_dict())
             if checkpoint_file is not None:
-                torch.save({"model_state_dict": best_state, "best_epoch": best_epoch}, checkpoint_file)
+                torch.save(
+                    {
+                        "model_state_dict": best_state,
+                        "best_epoch": best_epoch,
+                        "optimal_threshold": best_threshold,
+                    },
+                    checkpoint_file,
+                )
             patience_counter = 0
         else:
             patience_counter += 1
@@ -548,7 +527,7 @@ def train_pyg_minibatch(
         if epoch % 10 == 0 or epoch == 1:
             print(
                 f"[GNN Epoch {epoch:03d}/{epochs}] "
-                f"Loss: {last_batch_loss:.4f} | "
+                f"Loss: {loss.item():.4f} | "
                 f"Val Selection Score: {selection_score:.4f} | "
                 f"Patience Counter: {patience_counter}/{patience}",
                 flush=True,
@@ -562,15 +541,15 @@ def train_pyg_minibatch(
     elif checkpoint_file is not None and checkpoint_file.exists():
         checkpoint_payload = torch.load(checkpoint_file, map_location=resolved_device)
         model.load_state_dict(checkpoint_payload["model_state_dict"])
+        best_threshold = float(checkpoint_payload.get("optimal_threshold", decision_threshold))
 
-    test_labels, test_probabilities, test_predictions, _ = _evaluate_minibatch(
+    test_labels, test_probabilities, test_predictions, _ = _evaluate_full_batch(
         model,
-        test_loader,
+        normalized_data,
         criterion,
-        device=resolved_device,
-        decision_threshold=decision_threshold,
+        test_index_tensor,
+        decision_threshold=best_threshold,
     )
-
     metrics = _classification_metrics(test_labels, test_probabilities, test_predictions)
     result = GNNResult(
         average_precision=metrics["average_precision"],
@@ -583,30 +562,45 @@ def train_pyg_minibatch(
         test_rows=int(len(test_idx)),
         best_epoch=int(best_epoch),
         best_validation_average_precision=best_val_ap,
+        best_validation_f1=best_val_f1,
+        optimal_threshold=float(best_threshold),
     )
 
     payload = asdict(result)
     payload.update(
         {
-            "model_name": "pytorch_graphsage",
-            "loader_backend": loader_backend,
+            "model_name": "pytorch_hetero_gat",
+            "loader_backend": "full_batch_hetero",
             "device": str(resolved_device),
-            "feature_dimension": int(normalized_data.num_node_features),
-            "feature_columns": list(feature_columns or [f"x_{index}" for index in range(int(normalized_data.num_node_features))]),
+            "feature_dimension": int(normalized_data["account"].x.shape[1]),
+            "merchant_feature_dimension": int(normalized_data["merchant"].x.shape[1]),
+            "edge_feature_dimension": int(normalized_data["account", "transfers", "account"].edge_attr.shape[1]),
+            "feature_columns": list(
+                feature_columns
+                or [f"account_x_{index}" for index in range(int(normalized_data["account"].x.shape[1]))]
+            ),
+            "merchant_feature_columns": list(
+                merchant_feature_columns
+                or [f"merchant_x_{index}" for index in range(int(normalized_data["merchant"].x.shape[1]))]
+            ),
+            "edge_feature_columns": list(edge_feature_columns or ["amount", "event_time", "transaction_type_code"]),
             "checkpoint_path": str(checkpoint_file) if checkpoint_file is not None else None,
-            "batch_size": int(batch_size),
-            "fan_out": [int(value) for value in fan_out],
+            "batch_size": 0,
+            "fan_out": [],
             "pos_weight_multiplier": float(pos_weight_multiplier),
-            "decision_threshold": float(decision_threshold),
+            "decision_threshold": float(best_threshold),
+            "configured_decision_threshold": float(decision_threshold),
         }
     )
     return payload
 
 
 def train_pytorch_gcn(
-    data: Data,
+    data: HeteroData,
     *,
     feature_columns: Sequence[str] | None = None,
+    merchant_feature_columns: Sequence[str] | None = None,
+    edge_feature_columns: Sequence[str] | None = None,
     hidden_dim: int = 64,
     dropout: float = 0.3,
     learning_rate: float = 0.01,
@@ -627,6 +621,8 @@ def train_pytorch_gcn(
     return train_pyg_minibatch(
         data,
         feature_columns=feature_columns,
+        merchant_feature_columns=merchant_feature_columns,
+        edge_feature_columns=edge_feature_columns,
         hidden_dim=hidden_dim,
         dropout=dropout,
         learning_rate=learning_rate,

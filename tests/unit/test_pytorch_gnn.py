@@ -49,6 +49,8 @@ def test_pytorch_gcn_trains_on_small_graph() -> None:
         test_size=0.25,
     )
 
-    assert metrics["model_name"] == "pytorch_graphsage"
+    assert metrics["model_name"] == "pytorch_hetero_gat"
     assert metrics["feature_dimension"] > 0
+    assert metrics["merchant_feature_dimension"] > 0
+    assert 0.05 <= metrics["optimal_threshold"] <= 0.95
     assert metrics["test_rows"] > 0

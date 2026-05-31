@@ -20,6 +20,11 @@ def main() -> None:
     graph_bundle = build_pyg_graph_data_from_archive(
         archive_path,
         chunksize=settings.dataset.archive_chunksize,
+        temporal_windows=settings.temporal.windows,
+        merchant_seed=settings.enrichment.seed,
+        merchant_pool_size=settings.enrichment.merchant_pool_size,
+        include_communities=settings.graph.community_detection,
+        community_seed=settings.graph.community_seed,
     )
     device = resolve_training_device(
         use_cuda=settings.hardware.use_cuda,
@@ -32,6 +37,8 @@ def main() -> None:
     metrics = train_pytorch_gcn(
         graph_bundle.data,
         feature_columns=graph_bundle.feature_columns,
+        merchant_feature_columns=graph_bundle.merchant_feature_columns,
+        edge_feature_columns=graph_bundle.edge_feature_columns,
         hidden_dim=settings.gnn.hidden_dim,
         dropout=settings.gnn.dropout,
         learning_rate=settings.gnn.learning_rate,
@@ -53,6 +60,7 @@ def main() -> None:
     output_path = output_dir / "pytorch_gcn_metrics.json"
     output_path.write_text(json.dumps(metrics, indent=2), encoding="utf-8")
 
+    print(f"GNN architecture: {settings.gnn.architecture}")
     print(f"Training device: {device}")
     if device.type == "cuda":
         print(f"CUDA device count: {torch.cuda.device_count()}")

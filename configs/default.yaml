@@ -36,8 +36,8 @@ graph:
   embedding_dimensions: 16
 
 gnn:
-  architecture: graphsage
-  feature_source: archive_stream
+  architecture: hetero_gat
+  feature_source: unified_archive_spatiotemporal_bundle
   hidden_dim: 64
   dropout: 0.3
   learning_rate: 0.01
@@ -45,8 +45,8 @@ gnn:
   epochs: 120
   patience: 20
   pos_weight_multiplier: 0.5
-  decision_threshold: 0.7
-  checkpoint_name: pytorch_graphsage_model.pt
+  decision_threshold: 0.5
+  checkpoint_name: pytorch_hetero_gat_model.pt
   loader:
     batch_size: 1024
     fan_out: [15, 5]

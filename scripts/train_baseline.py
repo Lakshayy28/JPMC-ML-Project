@@ -9,27 +9,41 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
 from fri.config import load_settings
-from fri.data.loaders import load_processed_tables
-from fri.features.baseline import build_feature_sets
-from fri.models.baseline import train_all_baselines
+from fri.graph.io import load_archive_graph_data
+from fri.graph.service import build_archive_feature_bundle
+from fri.models.baseline import train_binary_models
 
 
 def main() -> None:
     print("--> Loading tabular baseline settings...", flush=True)
     settings = load_settings()
 
-    print(f"--> Loading processed canonical tables from: {settings.dataset.processed_root}", flush=True)
-    tables = load_processed_tables(settings.dataset.processed_root)
+    print(f"--> Loading unified archive graph data from: {settings.graph.archive_sample}", flush=True)
+    archive_data = load_archive_graph_data(settings.graph.archive_sample)
 
-    print("--> Extracting rolling window temporal feature sets...", flush=True)
-    feature_sets = build_feature_sets(tables, temporal_windows=settings.temporal.windows)
+    print("--> Flattening 20K archive transaction attributes into account-level tabular features...", flush=True)
+    feature_bundle = build_archive_feature_bundle(
+        archive_data.nodes,
+        archive_data.transactions,
+        temporal_windows=settings.temporal.windows,
+        merchant_seed=settings.enrichment.seed,
+        merchant_pool_size=settings.enrichment.merchant_pool_size,
+        include_communities=settings.graph.community_detection,
+        community_seed=settings.graph.community_seed,
+        include_embeddings=False,
+    )
+    tabular_features = feature_bundle["tabular_account_features"].copy()
+    tabular_features["label"] = tabular_features["is_fraud"].astype(int)
 
     print("--> Training tabular baseline estimators...", flush=True)
-    metrics = train_all_baselines(
-        feature_sets,
+    metrics = train_binary_models(
+        tabular_features,
+        target_column="label",
+        id_columns=("node_id", "is_fraud", "fraud_step"),
         random_state=settings.models.random_state,
         test_size=settings.models.test_size,
         verbose=True,
+        run_label="archive_account_tabular",
     )
 
     output_dir = REPO_ROOT / "artifacts"

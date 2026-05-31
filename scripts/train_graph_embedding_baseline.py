@@ -9,9 +9,8 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
 from fri.config import load_settings
-from fri.graph.builder import build_archive_transaction_graph
 from fri.graph.io import load_archive_graph_data
-from fri.graph.service import build_graph_feature_bundle
+from fri.graph.service import build_archive_feature_bundle
 from fri.models.graph_embedding import train_embedding_and_combined_baselines
 
 
@@ -22,16 +21,18 @@ def main() -> None:
     print(f"--> Loading archive graph data from: {settings.graph.archive_sample}", flush=True)
     archive_data = load_archive_graph_data(settings.graph.archive_sample)
 
-    print("--> Building archive transaction graph...", flush=True)
-    graph = build_archive_transaction_graph(archive_data.nodes, archive_data.transactions)
-
-    print("--> Generating graph embeddings and combined feature bundle...", flush=True)
-    feature_bundle = build_graph_feature_bundle(
-        graph,
+    print("--> Generating unified archive graph embeddings and temporal feature bundle...", flush=True)
+    feature_bundle = build_archive_feature_bundle(
+        archive_data.nodes,
+        archive_data.transactions,
+        temporal_windows=settings.temporal.windows,
+        merchant_seed=settings.enrichment.seed,
+        merchant_pool_size=settings.enrichment.merchant_pool_size,
         include_communities=settings.graph.community_detection,
         community_seed=settings.graph.community_seed,
         embedding_dimensions=settings.graph.embedding_dimensions,
         embedding_random_state=settings.models.random_state,
+        include_embeddings=True,
     )
 
     print("--> Training graph embedding baseline estimators...", flush=True)

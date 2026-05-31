@@ -80,6 +80,16 @@ def _require_mapping(value: Any, *, label: str) -> Mapping[str, Any]:
 
 
 def _collect_tabular_rows(payload: Mapping[str, Any]) -> list[MetricRow]:
+    if payload and all(isinstance(value, Mapping) and "model_name" in value for value in payload.values()):
+        return [
+            _metric_row(
+                "Tabular",
+                model_name,
+                _require_mapping(model_metrics, label=f"tabular/{model_name}"),
+            )
+            for model_name, model_metrics in payload.items()
+        ]
+
     rows: list[MetricRow] = []
     for dataset_name in ("transaction", "party"):
         dataset_metrics = _require_mapping(payload.get(dataset_name), label=f"tabular/{dataset_name}")
