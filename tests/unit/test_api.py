@@ -78,6 +78,16 @@ def test_api_routes_return_expected_payloads(monkeypatch: pytest.MonkeyPatch) ->
         assert health_response.status_code == 200
         assert health_response.json() == {"status": "healthy", "model": "hetero_gat"}
 
+        cors_response = client.options(
+            "/health",
+            headers={
+                "Origin": "http://localhost:5173",
+                "Access-Control-Request-Method": "GET",
+            },
+        )
+        assert cors_response.status_code == 200
+        assert cors_response.headers["access-control-allow-origin"] == "http://localhost:5173"
+
         prediction_response = client.get("/predict/19204")
         assert prediction_response.status_code == 200
         assert prediction_response.json()["account_id"] == 19204

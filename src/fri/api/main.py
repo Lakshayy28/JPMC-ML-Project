@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, Response
+from fastapi.middleware.cors import CORSMiddleware
 
 from fri.api import monitoring as api_monitoring
 from fri.api import schemas
@@ -17,6 +18,14 @@ async def lifespan(_: FastAPI):
 
 
 app = FastAPI(title="FRI Risk Engine", version="0.1.0", lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.get("/health")

@@ -7,3 +7,7 @@ data/external/AMLSim/
 artifacts/graph/archive_node_features.csv
 artifacts/graph/archive_node_embeddings.csv
 artifacts/graph/*.pt
+
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/

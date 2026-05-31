@@ -9,3 +9,14 @@ services:
     volumes:
       - ./artifacts:/app/artifacts
     restart: unless-stopped
+
+  fri-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: fri-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - fri-api-engine
+    restart: unless-stopped
