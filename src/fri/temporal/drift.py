@@ -7,6 +7,22 @@ import pandas as pd
 from scipy.stats import ks_2samp
 
 
+DRIFT_EXCLUDED_COLUMNS = {
+    "node_id",
+    "is_fraud",
+    "fraud_step",
+    "transaction_id",
+    "source_account_id",
+    "destination_account_id",
+    "source_node_id",
+    "target_node_id",
+    "event_step",
+    "event_time",
+    "transaction_type",
+    "label_source",
+}
+
+
 def select_temporal_feature_columns(feature_frame: pd.DataFrame) -> list[str]:
     excluded = {"transaction_id", "source_account_id", "destination_account_id", "transaction_type", "label_source"}
     candidates: list[str] = []
@@ -16,6 +32,11 @@ def select_temporal_feature_columns(feature_frame: pd.DataFrame) -> list[str]:
         if any(token in column for token in ("prev_", "recent_", "gap", "velocity_ratio", "amount_ratio")):
             candidates.append(column)
     return candidates
+
+
+def select_distribution_feature_columns(feature_frame: pd.DataFrame) -> list[str]:
+    numeric_columns = feature_frame.select_dtypes(include=["number", "bool"]).columns
+    return [str(column) for column in numeric_columns if str(column) not in DRIFT_EXCLUDED_COLUMNS]
 
 
 def _cohorts_by_time(
@@ -100,4 +121,73 @@ def compute_temporal_drift_report(
         "feature_count_analyzed": len(feature_drift),
         "top_drift_features": top_drift,
         "strong_drift_features": [item for item in feature_drift if item["ks_statistic"] >= 0.2],
+    }
+
+
+def compute_distribution_drift_report(
+    baseline_frame: pd.DataFrame,
+    recent_frame: pd.DataFrame,
+    *,
+    feature_columns: Sequence[str] | None = None,
+    top_k: int = 10,
+    ks_threshold: float = 0.2,
+    pvalue_threshold: float = 0.05,
+) -> dict[str, object]:
+    if baseline_frame.empty:
+        raise ValueError("Baseline feature frame is empty")
+    if recent_frame.empty:
+        raise ValueError("Recent feature frame is empty")
+
+    candidate_columns = list(feature_columns or select_distribution_feature_columns(baseline_frame))
+    recent_numeric_columns = set(select_distribution_feature_columns(recent_frame))
+    comparable_columns = [
+        column
+        for column in candidate_columns
+        if column in baseline_frame.columns and column in recent_frame.columns and column in recent_numeric_columns
+    ]
+    if not comparable_columns:
+        raise ValueError("No overlapping numeric drift features were provided")
+
+    feature_drift: list[dict[str, object]] = []
+    for column in comparable_columns:
+        baseline_series = pd.to_numeric(baseline_frame[column], errors="coerce").dropna()
+        recent_series = pd.to_numeric(recent_frame[column], errors="coerce").dropna()
+        if baseline_series.empty or recent_series.empty:
+            continue
+
+        statistic, pvalue = ks_2samp(baseline_series, recent_series)
+        baseline_mean = float(baseline_series.mean())
+        recent_mean = float(recent_series.mean())
+        mean_delta = float(recent_mean - baseline_mean)
+        relative_change = 0.0 if baseline_mean == 0 else float(mean_delta / abs(baseline_mean))
+        feature_drift.append(
+            {
+                "feature": column,
+                "baseline_mean": baseline_mean,
+                "recent_mean": recent_mean,
+                "mean_delta": mean_delta,
+                "relative_change": relative_change,
+                "ks_statistic": float(statistic),
+                "ks_pvalue": float(pvalue),
+            }
+        )
+
+    if not feature_drift:
+        raise ValueError("No comparable numeric feature distributions were provided")
+
+    feature_drift.sort(key=lambda item: (item["ks_statistic"], abs(item["mean_delta"])), reverse=True)
+    drifted_features = [
+        item
+        for item in feature_drift
+        if item["ks_statistic"] >= ks_threshold and item["ks_pvalue"] <= pvalue_threshold
+    ]
+
+    return {
+        "baseline_rows": int(len(baseline_frame)),
+        "recent_rows": int(len(recent_frame)),
+        "feature_count_analyzed": len(feature_drift),
+        "top_drift_features": feature_drift[:top_k],
+        "drifted_features": drifted_features,
+        "drift_detected": bool(drifted_features),
+        "drift_score": float(max(item["ks_statistic"] for item in feature_drift)),
     }

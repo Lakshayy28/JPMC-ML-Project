@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
+from typing import Any
 
 from fastapi import FastAPI, HTTPException
 
@@ -50,4 +51,18 @@ def explain(account_id: int) -> schemas.ExplanationResponse:
         fraud_probability=report.risk_score,
         top_features=report.top_node_features,
         critical_transactions=report.critical_edges,
+    )
+
+
+@app.post("/analyze-drift", response_model=schemas.DriftReportResponse)
+def analyze_drift(recent_features: list[dict[str, Any]]) -> schemas.DriftReportResponse:
+    engine = api_state.get_engine_state()
+    try:
+        report = engine.analyze_drift(recent_features)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    return schemas.DriftReportResponse(
+        drift_detected=report.drift_detected,
+        drift_score=report.drift_score,
+        drifted_features=report.drifted_features,
     )

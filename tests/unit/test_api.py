@@ -22,6 +22,7 @@ from fri.explainability.service import NodeExplanationReport
 class _FakeEngineState:
     def __init__(self) -> None:
         self.explain_calls: list[tuple[int, int]] = []
+        self.drift_calls: list[list[dict[str, object]]] = []
 
     def health_payload(self) -> dict[str, str]:
         return {"status": "healthy", "model": "hetero_gat"}
@@ -49,6 +50,16 @@ class _FakeEngineState:
             critical_edges=[{"transaction_id": 117726, "amount": 18.69}],
         )
 
+    def analyze_drift(self, recent_features: list[dict[str, object]]) -> api_state.DriftAnalysisResult:
+        if not recent_features:
+            raise ValueError("At least one recent feature record is required")
+        self.drift_calls.append(recent_features)
+        return api_state.DriftAnalysisResult(
+            drift_detected=True,
+            drift_score=0.91,
+            drifted_features=["outgoing_tx_velocity_30d", "total_amount"],
+        )
+
 
 def test_api_routes_return_expected_payloads(monkeypatch: pytest.MonkeyPatch) -> None:
     fake_state = _FakeEngineState()
@@ -72,11 +83,28 @@ def test_api_routes_return_expected_payloads(monkeypatch: pytest.MonkeyPatch) ->
         assert "incoming_amount_velocity_1d" in explanation_response.json()["top_features"]
         assert fake_state.explain_calls == [(19204, 50)]
 
+        drift_response = client.post(
+            "/analyze-drift",
+            json=[
+                {
+                    "outgoing_tx_velocity_30d": 12.0,
+                    "total_amount": 5000.0,
+                }
+            ],
+        )
+        assert drift_response.status_code == 200
+        assert drift_response.json()["drift_detected"] is True
+        assert drift_response.json()["drifted_features"] == ["outgoing_tx_velocity_30d", "total_amount"]
+        assert len(fake_state.drift_calls) == 1
+
         missing_prediction = client.get("/predict/1")
         assert missing_prediction.status_code == 404
 
         missing_explanation = client.get("/explain/1")
         assert missing_explanation.status_code == 404
+
+        invalid_drift = client.post("/analyze-drift", json=[])
+        assert invalid_drift.status_code == 400
 
 
 def test_engine_state_caches_explanations() -> None:
@@ -133,3 +161,29 @@ def test_engine_state_resolves_checkpoint_path_portably(tmp_path: Path) -> None:
     )()
 
     assert engine._resolve_checkpoint_path() == portable_checkpoint
+
+
+def test_engine_state_analyzes_drift_from_recent_feature_payload() -> None:
+    engine = api_state.EngineState.__new__(api_state.EngineState)
+    engine.drift_baseline_frame = pytest.importorskip("pandas").DataFrame(
+        {
+            "outgoing_tx_velocity_30d": [0.5, 0.7, 0.8, 1.0, 1.2, 1.3],
+            "total_amount": [100.0, 120.0, 130.0, 150.0, 170.0, 180.0],
+        }
+    )
+    engine.drift_feature_columns = ["outgoing_tx_velocity_30d", "total_amount"]
+
+    result = engine.analyze_drift(
+        [
+            {"outgoing_tx_velocity_30d": 6.0, "total_amount": 900.0},
+            {"outgoing_tx_velocity_30d": 5.5, "total_amount": 880.0},
+            {"outgoing_tx_velocity_30d": 5.8, "total_amount": 910.0},
+            {"outgoing_tx_velocity_30d": 6.1, "total_amount": 920.0},
+            {"outgoing_tx_velocity_30d": 5.9, "total_amount": 905.0},
+            {"outgoing_tx_velocity_30d": 6.2, "total_amount": 930.0},
+        ]
+    )
+
+    assert result.drift_detected is True
+    assert result.drift_score > 0.2
+    assert set(result.drifted_features) == {"outgoing_tx_velocity_30d", "total_amount"}

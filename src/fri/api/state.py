@@ -19,6 +19,7 @@ from fri.models.pytorch_gnn import (
     prepare_hetero_inference_data,
     resolve_training_device,
 )
+from fri.temporal.drift import compute_distribution_drift_report, select_distribution_feature_columns
 
 
 @dataclass(frozen=True)
@@ -27,6 +28,13 @@ class PredictionResult:
     fraud_probability: float
     is_high_risk: bool
     threshold_used: float
+
+
+@dataclass(frozen=True)
+class DriftAnalysisResult:
+    drift_detected: bool
+    drift_score: float
+    drifted_features: list[str]
 
 
 class EngineState:
@@ -76,6 +84,8 @@ class EngineState:
                 self.metrics.get("decision_threshold", self.settings.gnn.decision_threshold),
             )
         )
+        self.drift_baseline_frame = self._drift_baseline_frame(self.feature_bundle)
+        self.drift_feature_columns = select_distribution_feature_columns(self.drift_baseline_frame)
         self.explainer = HeteroGraphExplainerService(
             self.model,
             feature_columns=[str(value) for value in self.metrics.get("feature_columns", [])],
@@ -112,6 +122,13 @@ class EngineState:
         if not isinstance(merchant_features, pd.DataFrame) or "merchant_id" not in merchant_features.columns:
             return []
         return merchant_features["merchant_id"].astype(str).tolist()
+
+    @staticmethod
+    def _drift_baseline_frame(feature_bundle: dict[str, object]) -> pd.DataFrame:
+        baseline_frame = feature_bundle.get("tabular_account_features")
+        if not isinstance(baseline_frame, pd.DataFrame) or baseline_frame.empty:
+            raise ValueError("Expected non-empty tabular_account_features for drift baseline analysis")
+        return baseline_frame.copy()
 
     @staticmethod
     def _raw_edge_records(feature_bundle: dict[str, object]) -> dict[str, list[dict[str, Any]]]:
@@ -165,6 +182,21 @@ class EngineState:
 
     def explain_account(self, account_id: int, *, epochs: int = 50) -> NodeExplanationReport:
         return self._explain_account_cached(account_id, int(epochs))
+
+    def analyze_drift(self, recent_features: list[dict[str, object]]) -> DriftAnalysisResult:
+        if not recent_features:
+            raise ValueError("At least one recent feature record is required")
+
+        report = compute_distribution_drift_report(
+            self.drift_baseline_frame,
+            pd.DataFrame(recent_features),
+            feature_columns=self.drift_feature_columns,
+        )
+        return DriftAnalysisResult(
+            drift_detected=bool(report["drift_detected"]),
+            drift_score=float(report["drift_score"]),
+            drifted_features=[str(item["feature"]) for item in report["drifted_features"]],
+        )
 
 
 _ENGINE_STATE: EngineState | None = None
