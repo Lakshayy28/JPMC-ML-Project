@@ -4,11 +4,13 @@ import json
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
+from time import perf_counter
 from typing import Any
 
 import pandas as pd
 import torch
 
+from fri.api.monitoring import DriftMonitor
 from fri.config import Settings, load_settings
 from fri.explainability.service import HeteroGraphExplainerService, NodeExplanationReport
 from fri.graph.io import load_archive_graph_data
@@ -35,6 +37,8 @@ class DriftAnalysisResult:
     drift_detected: bool
     drift_score: float
     drifted_features: list[str]
+    sample_size: int
+    analyzed_feature_count: int
 
 
 class EngineState:
@@ -86,6 +90,7 @@ class EngineState:
         )
         self.drift_baseline_frame = self._drift_baseline_frame(self.feature_bundle)
         self.drift_feature_columns = select_distribution_feature_columns(self.drift_baseline_frame)
+        self.drift_monitor = DriftMonitor(self.settings.graph.output_root.parent / "temporal" / "drift_events.jsonl")
         self.explainer = HeteroGraphExplainerService(
             self.model,
             feature_columns=[str(value) for value in self.metrics.get("feature_columns", [])],
@@ -187,16 +192,33 @@ class EngineState:
         if not recent_features:
             raise ValueError("At least one recent feature record is required")
 
+        start_time = perf_counter()
         report = compute_distribution_drift_report(
             self.drift_baseline_frame,
             pd.DataFrame(recent_features),
             feature_columns=self.drift_feature_columns,
         )
-        return DriftAnalysisResult(
+        result = DriftAnalysisResult(
             drift_detected=bool(report["drift_detected"]),
             drift_score=float(report["drift_score"]),
             drifted_features=[str(item["feature"]) for item in report["drifted_features"]],
+            sample_size=int(len(recent_features)),
+            analyzed_feature_count=int(report["feature_count_analyzed"]),
         )
+        self.drift_monitor.record_drift_event(
+            self.drift_monitor.build_event(
+                drift_detected=result.drift_detected,
+                drift_score=result.drift_score,
+                drifted_features=result.drifted_features,
+                sample_size=result.sample_size,
+                analyzed_feature_count=result.analyzed_feature_count,
+            ),
+            duration_seconds=perf_counter() - start_time,
+        )
+        return result
+
+    def metrics_payload(self) -> bytes:
+        return self.drift_monitor.render_metrics()
 
 
 _ENGINE_STATE: EngineState | None = None

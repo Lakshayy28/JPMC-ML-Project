@@ -3,8 +3,9 @@ from __future__ import annotations
 from contextlib import asynccontextmanager
 from typing import Any
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Response
 
+from fri.api import monitoring as api_monitoring
 from fri.api import schemas
 from fri.api import state as api_state
 
@@ -66,3 +67,9 @@ def analyze_drift(recent_features: list[dict[str, Any]]) -> schemas.DriftReportR
         drift_score=report.drift_score,
         drifted_features=report.drifted_features,
     )
+
+
+@app.get("/metrics")
+def metrics() -> Response:
+    engine = api_state.get_engine_state()
+    return Response(content=engine.metrics_payload(), media_type=api_monitoring.PROMETHEUS_CONTENT_TYPE)

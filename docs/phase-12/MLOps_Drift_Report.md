@@ -17,6 +17,8 @@ The new monitoring slice includes:
 - a live `POST /analyze-drift` API endpoint
 - baseline feature distributions stored in the initialized engine state
 - KS-statistic-based drift scoring over incoming feature batches
+- persistent drift event logging under `artifacts/temporal/drift_events.jsonl`
+- a Prometheus-style `GET /metrics` export for drift monitoring counters and gauges
 - a simulation script that perturbs known laundering-related features and sends them to the running Docker API
 
 This closes the loop between model serving and model maintenance by exposing a direct signal for retraining readiness.
@@ -75,6 +77,38 @@ This is especially important in AML and fraud monitoring, where adversarial beha
 
 ## Operational Workflow
 
+### Persistent Drift Event Logging
+
+Every successful drift analysis request now appends a JSONL event to `artifacts/temporal/drift_events.jsonl`.
+
+Each persisted record includes:
+
+- an RFC 3339 UTC timestamp
+- whether drift was detected
+- the drift score
+- the list of drifted features
+- the request sample size
+- the count of analyzed features
+
+Because the Docker Compose setup already persists the `artifacts/` directory back to the host, these monitoring events survive container restarts and can be harvested by downstream batch jobs or alerting pipelines.
+
+### Prometheus Metrics Export
+
+The API now exposes `GET /metrics` in Prometheus text format.
+
+Current exported drift-monitoring metrics include:
+
+- `fri_drift_analyses_total`
+- `fri_drift_detected_total`
+- `fri_drift_events_logged_total`
+- `fri_drift_last_score`
+- `fri_drift_last_sample_size`
+- `fri_drift_last_feature_count_analyzed`
+- `fri_drift_last_drifted_feature_count`
+- `fri_drift_analysis_duration_seconds`
+
+This makes the service ready for pull-based scraping by Prometheus, Grafana Agent, or other compatible observability infrastructure.
+
 ### Live API Monitoring
 
 An external scheduler, orchestrator, or batch collector can periodically send recent feature windows to `POST /analyze-drift`.
@@ -119,6 +153,12 @@ curl -X POST http://127.0.0.1:8000/analyze-drift \
 ```bash
 source .venv/bin/activate
 python scripts/simulate_drift.py
+```
+
+### Scrape The Prometheus Metrics
+
+```bash
+curl http://127.0.0.1:8000/metrics
 ```
 
 ## Validation Summary

@@ -15,6 +15,7 @@ pytest.importorskip("httpx")
 from fastapi.testclient import TestClient
 
 from fri.api import main as api_main
+from fri.api import monitoring as api_monitoring
 from fri.api import state as api_state
 from fri.explainability.service import NodeExplanationReport
 
@@ -58,7 +59,12 @@ class _FakeEngineState:
             drift_detected=True,
             drift_score=0.91,
             drifted_features=["outgoing_tx_velocity_30d", "total_amount"],
+            sample_size=len(recent_features),
+            analyzed_feature_count=2,
         )
+
+    def metrics_payload(self) -> bytes:
+        return b"# HELP fri_drift_analyses_total Total number of drift analysis requests processed by the API.\n"
 
 
 def test_api_routes_return_expected_payloads(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -105,6 +111,10 @@ def test_api_routes_return_expected_payloads(monkeypatch: pytest.MonkeyPatch) ->
 
         invalid_drift = client.post("/analyze-drift", json=[])
         assert invalid_drift.status_code == 400
+
+        metrics_response = client.get("/metrics")
+        assert metrics_response.status_code == 200
+        assert "fri_drift_analyses_total" in metrics_response.text
 
 
 def test_engine_state_caches_explanations() -> None:
@@ -163,7 +173,7 @@ def test_engine_state_resolves_checkpoint_path_portably(tmp_path: Path) -> None:
     assert engine._resolve_checkpoint_path() == portable_checkpoint
 
 
-def test_engine_state_analyzes_drift_from_recent_feature_payload() -> None:
+def test_engine_state_analyzes_drift_from_recent_feature_payload(tmp_path: Path) -> None:
     engine = api_state.EngineState.__new__(api_state.EngineState)
     engine.drift_baseline_frame = pytest.importorskip("pandas").DataFrame(
         {
@@ -172,6 +182,7 @@ def test_engine_state_analyzes_drift_from_recent_feature_payload() -> None:
         }
     )
     engine.drift_feature_columns = ["outgoing_tx_velocity_30d", "total_amount"]
+    engine.drift_monitor = api_monitoring.DriftMonitor(tmp_path / "artifacts" / "temporal" / "drift_events.jsonl")
 
     result = engine.analyze_drift(
         [
@@ -187,3 +198,28 @@ def test_engine_state_analyzes_drift_from_recent_feature_payload() -> None:
     assert result.drift_detected is True
     assert result.drift_score > 0.2
     assert set(result.drifted_features) == {"outgoing_tx_velocity_30d", "total_amount"}
+
+
+def test_drift_monitor_persists_events_and_exports_prometheus_metrics(tmp_path: Path) -> None:
+    events_path = tmp_path / "artifacts" / "temporal" / "drift_events.jsonl"
+    monitor = api_monitoring.DriftMonitor(events_path)
+
+    monitor.record_drift_event(
+        monitor.build_event(
+            drift_detected=True,
+            drift_score=0.87,
+            drifted_features=["total_amount", "outgoing_tx_velocity_30d"],
+            sample_size=32,
+            analyzed_feature_count=12,
+        ),
+        duration_seconds=0.25,
+    )
+
+    persisted_lines = events_path.read_text(encoding="utf-8").strip().splitlines()
+    assert len(persisted_lines) == 1
+    assert "\"drift_detected\": true" in persisted_lines[0]
+
+    metrics_text = monitor.render_metrics().decode("utf-8")
+    assert "fri_drift_analyses_total" in metrics_text
+    assert "fri_drift_detected_total" in metrics_text
+    assert "fri_drift_last_score" in metrics_text
