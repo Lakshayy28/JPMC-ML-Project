@@ -59,9 +59,7 @@ class EngineState:
             device=self.device,
             pin_memory=self.settings.hardware.pin_memory,
         )
-        checkpoint_path = Path(
-            str(self.metrics.get("checkpoint_path", self.settings.graph.output_root / self.settings.gnn.checkpoint_name))
-        )
+        checkpoint_path = self._resolve_checkpoint_path()
         self.model, self.checkpoint_payload = load_trained_hetero_gat_model(
             self.data,
             checkpoint_path,
@@ -91,6 +89,23 @@ class EngineState:
         if not metrics_path.exists():
             raise FileNotFoundError(f"Expected metrics file does not exist: {metrics_path}")
         return json.loads(metrics_path.read_text(encoding="utf-8"))
+
+    def _resolve_checkpoint_path(self) -> Path:
+        candidates: list[Path] = []
+
+        checkpoint_value = self.metrics.get("checkpoint_path")
+        if checkpoint_value:
+            recorded_path = Path(str(checkpoint_value))
+            candidates.append(self.settings.graph.output_root / recorded_path.name)
+            candidates.append(recorded_path)
+
+        candidates.append(self.settings.graph.output_root / self.settings.gnn.checkpoint_name)
+
+        for candidate in candidates:
+            if candidate.exists():
+                return candidate
+
+        return candidates[0]
 
     @staticmethod
     def _merchant_node_ids(merchant_features: object) -> list[str]:

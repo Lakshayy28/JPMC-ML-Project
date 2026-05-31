@@ -13,6 +13,7 @@ RUN apt-get update \
 COPY requirements.txt /app/requirements.txt
 
 RUN pip install --no-cache-dir --upgrade pip \
+    && PIP_INDEX_URL=https://download.pytorch.org/whl/cpu pip install --no-cache-dir torch==2.12.0 \
     && pip install --no-cache-dir -r requirements.txt
 
 COPY src /app/src

@@ -81,6 +81,12 @@ The new root-level `requirements.txt` pins the core API and inference libraries 
 
 Pinning these versions reduces drift between development and deployment environments and keeps the image aligned with the runtime that already passed API and explainability validation.
 
+### CPU-First Torch Installation
+
+The Docker image installs `torch==2.12.0` from the PyTorch CPU wheel index before processing the full `requirements.txt` set.
+
+This avoids pulling unnecessary CUDA and NVIDIA runtime packages into the container when building the API on a CPU-first local workflow such as Docker Desktop on Apple Silicon.
+
 ### Build Context Hygiene
 
 A `.dockerignore` file excludes non-runtime local content such as virtual environments, test output, and documentation from the Docker build context.

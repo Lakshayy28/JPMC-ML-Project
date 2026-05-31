@@ -111,3 +111,25 @@ def test_engine_state_caches_explanations() -> None:
     assert counting_explainer.calls == [(7, 50), (7, 25)]
 
     api_state.EngineState._explain_account_cached.cache_clear()
+
+
+def test_engine_state_resolves_checkpoint_path_portably(tmp_path: Path) -> None:
+    output_root = tmp_path / "artifacts" / "graph"
+    output_root.mkdir(parents=True)
+    portable_checkpoint = output_root / "pytorch_hetero_gat_model.pt"
+    portable_checkpoint.write_bytes(b"checkpoint")
+
+    engine = api_state.EngineState.__new__(api_state.EngineState)
+    engine.metrics = {
+        "checkpoint_path": "/Users/lakshaychandra/JPMC ML Project/artifacts/graph/pytorch_hetero_gat_model.pt"
+    }
+    engine.settings = type(
+        "_Settings",
+        (),
+        {
+            "graph": type("_GraphSettings", (), {"output_root": output_root})(),
+            "gnn": type("_GNNSettings", (), {"checkpoint_name": "fallback_model.pt"})(),
+        },
+    )()
+
+    assert engine._resolve_checkpoint_path() == portable_checkpoint
