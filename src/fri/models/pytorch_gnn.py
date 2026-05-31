@@ -99,15 +99,31 @@ class SpatialTemporalHeteroGAT(nn.Module):
             aggr="sum",
         )
 
-    def forward(self, data: HeteroData) -> torch.Tensor:
-        x_dict = {
-            "account": self.account_encoder(data["account"].x),
-            "merchant": self.merchant_encoder(data["merchant"].x),
-        }
-        edge_attr_dict = {edge_type: data[edge_type].edge_attr for edge_type in data.edge_types}
+    def forward(
+        self,
+        data: HeteroData | dict[str, torch.Tensor],
+        edge_index_dict: dict[tuple[str, str, str], torch.Tensor] | None = None,
+        edge_attr_dict: dict[tuple[str, str, str], torch.Tensor] | None = None,
+    ) -> torch.Tensor:
+        if isinstance(data, HeteroData):
+            x_dict = {
+                "account": self.account_encoder(data["account"].x),
+                "merchant": self.merchant_encoder(data["merchant"].x),
+            }
+            resolved_edge_index_dict = data.edge_index_dict
+            resolved_edge_attr_dict = {edge_type: data[edge_type].edge_attr for edge_type in data.edge_types}
+        else:
+            if edge_index_dict is None or edge_attr_dict is None:
+                raise ValueError("edge_index_dict and edge_attr_dict are required when forwarding dict-based hetero inputs")
+            x_dict = {
+                "account": self.account_encoder(data["account"]),
+                "merchant": self.merchant_encoder(data["merchant"]),
+            }
+            resolved_edge_index_dict = edge_index_dict
+            resolved_edge_attr_dict = edge_attr_dict
 
         for conv in self.convs:
-            x_dict = conv(x_dict, data.edge_index_dict, edge_attr_dict=edge_attr_dict)
+            x_dict = conv(x_dict, resolved_edge_index_dict, edge_attr_dict=resolved_edge_attr_dict)
             x_dict = {node_type: F.elu(features) for node_type, features in x_dict.items()}
             x_dict = {
                 node_type: F.dropout(features, p=self.dropout, training=self.training)
@@ -231,6 +247,10 @@ def _build_hetero_graph_bundle(feature_bundle: dict[str, object]) -> PYGGraphBun
     )
 
 
+def build_pyg_graph_data_from_feature_bundle(feature_bundle: dict[str, object]) -> PYGGraphBundle:
+    return _build_hetero_graph_bundle(feature_bundle)
+
+
 def build_pyg_graph_data_from_tables(
     nodes: pd.DataFrame,
     transactions: pd.DataFrame,
@@ -277,6 +297,21 @@ def build_pyg_graph_data_from_archive(
     )
 
 
+def build_hetero_gat_model(
+    data: HeteroData,
+    *,
+    hidden_dim: int = 64,
+    dropout: float = 0.3,
+) -> SpatialTemporalHeteroGAT:
+    return SpatialTemporalHeteroGAT(
+        account_input_dim=int(data["account"].x.shape[1]),
+        merchant_input_dim=int(data["merchant"].x.shape[1]),
+        edge_dim=int(data["account", "transfers", "account"].edge_attr.shape[1]),
+        hidden_dim=hidden_dim,
+        dropout=dropout,
+    )
+
+
 def _normalize_tensor(matrix: torch.Tensor) -> torch.Tensor:
     if matrix.numel() == 0:
         return matrix
@@ -299,6 +334,43 @@ def _normalize_hetero_data(data: HeteroData, train_indices: torch.Tensor) -> Het
         normalized[edge_type].edge_attr = _normalize_tensor(normalized[edge_type].edge_attr)
 
     return normalized
+
+
+def prepare_hetero_inference_data(
+    data: HeteroData,
+    *,
+    random_state: int = 42,
+    test_size: float = 0.25,
+    device: torch.device | None = None,
+    pin_memory: bool = True,
+) -> HeteroData:
+    resolved_device = device or torch.device("cpu")
+    labels_array = data["account"].y.cpu().numpy()
+    train_idx, _, _ = _split_indices(labels_array, test_size=test_size, random_state=random_state)
+    normalized_data = _normalize_hetero_data(data, torch.tensor(train_idx, dtype=torch.long))
+    if pin_memory and resolved_device.type == "cuda":
+        normalized_data = normalized_data.pin_memory()
+    return normalized_data.to(resolved_device, non_blocking=True)
+
+
+def load_trained_hetero_gat_model(
+    data: HeteroData,
+    checkpoint_path: str | Path,
+    *,
+    hidden_dim: int = 64,
+    dropout: float = 0.3,
+    device: torch.device | None = None,
+) -> tuple[SpatialTemporalHeteroGAT, dict[str, object]]:
+    resolved_device = device or torch.device("cpu")
+    checkpoint_file = Path(checkpoint_path)
+    if not checkpoint_file.exists():
+        raise FileNotFoundError(f"Checkpoint file does not exist: {checkpoint_file}")
+
+    model = build_hetero_gat_model(data, hidden_dim=hidden_dim, dropout=dropout).to(resolved_device)
+    checkpoint_payload = torch.load(checkpoint_file, map_location=resolved_device)
+    model.load_state_dict(checkpoint_payload["model_state_dict"])
+    model.eval()
+    return model, checkpoint_payload
 
 
 def _can_stratify(labels: np.ndarray, *, test_size: float) -> bool:
@@ -457,13 +529,7 @@ def train_pyg_minibatch(
         device=resolved_device,
     )
 
-    model = SpatialTemporalHeteroGAT(
-        account_input_dim=int(normalized_data["account"].x.shape[1]),
-        merchant_input_dim=int(normalized_data["merchant"].x.shape[1]),
-        edge_dim=int(normalized_data["account", "transfers", "account"].edge_attr.shape[1]),
-        hidden_dim=hidden_dim,
-        dropout=dropout,
-    ).to(resolved_device)
+    model = build_hetero_gat_model(normalized_data, hidden_dim=hidden_dim, dropout=dropout).to(resolved_device)
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate, weight_decay=weight_decay)
     criterion = nn.CrossEntropyLoss(weight=class_weights)
 

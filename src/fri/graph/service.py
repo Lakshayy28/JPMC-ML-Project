@@ -325,13 +325,36 @@ def build_archive_feature_bundle(
 
 
 def build_graph_feature_bundle(
-    graph: nx.DiGraph,
+    graph: nx.DiGraph | None = None,
     *,
+    nodes: pd.DataFrame | None = None,
+    transactions: pd.DataFrame | None = None,
+    temporal_windows: Sequence[int] = (1, 7, 30),
+    merchant_seed: int = 17,
+    merchant_pool_size: int = 24,
     include_communities: bool = True,
     community_seed: int = 42,
     embedding_dimensions: int = 16,
     embedding_random_state: int = 42,
-) -> dict[str, pd.DataFrame]:
+    include_embeddings: bool = True,
+) -> dict[str, pd.DataFrame | nx.DiGraph]:
+    if nodes is not None and transactions is not None:
+        return build_archive_feature_bundle(
+            nodes,
+            transactions,
+            temporal_windows=temporal_windows,
+            merchant_seed=merchant_seed,
+            merchant_pool_size=merchant_pool_size,
+            include_communities=include_communities,
+            community_seed=community_seed,
+            embedding_dimensions=embedding_dimensions,
+            embedding_random_state=embedding_random_state,
+            include_embeddings=include_embeddings,
+        )
+
+    if graph is None:
+        raise ValueError("Either graph or nodes and transactions must be provided")
+
     node_features = compute_node_features(
         graph,
         include_communities=include_communities,

@@ -1,0 +1,47 @@
+{
+  "node_id": 19204,
+  "risk_score": 0.9985247254371643,
+  "top_node_features": {
+    "incoming_amount_velocity_1d": 0.5602782964706421,
+    "outgoing_counterparty_velocity_1d": 0.5284303426742554,
+    "incoming_counterparty_velocity_7d": 0.5283365249633789
+  },
+  "critical_edges": [
+    {
+      "relation": "account->transfers->account",
+      "importance": 0.5121920704841614,
+      "source_index": 19204,
+      "target_index": 5966,
+      "source_node_id": 19204,
+      "target_node_id": 5966,
+      "transaction_id": 117726,
+      "amount": 18.69,
+      "event_time": 136.0,
+      "transaction_type_code": 0.0
+    },
+    {
+      "relation": "account->transfers->account",
+      "importance": 0.5114575624465942,
+      "source_index": 16461,
+      "target_index": 19204,
+      "source_node_id": 16461,
+      "target_node_id": 19204,
+      "transaction_id": 56491,
+      "amount": 286.54,
+      "event_time": 71.0,
+      "transaction_type_code": 0.0
+    },
+    {
+      "relation": "account->transfers->account",
+      "importance": 0.5101035237312317,
+      "source_index": 10976,
+      "target_index": 19204,
+      "source_node_id": 10976,
+      "target_node_id": 19204,
+      "transaction_id": 11499,
+      "amount": 449.26,
+      "event_time": 32.0,
+      "transaction_type_code": 0.0
+    }
+  ]
+}
