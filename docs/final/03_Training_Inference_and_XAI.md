@@ -6,13 +6,13 @@ Document how the Financial Risk Intelligence Engine trains the deployed Hetero G
 
 ## Executive Summary
 
-The current deep learning path is implemented in `src/fri/models/pytorch_gnn.py` and operationalized through:
+The current deep learning path is implemented in [src/fri/models/pytorch_gnn.py](src/fri/models/pytorch_gnn.py) and operationalized through:
 
-- `scripts/train_pytorch_gcn.py`
-- `src/fri/api/state.py`
-- `src/fri/api/main.py`
-- `src/fri/explainability/service.py`
-- `scripts/run_explainability.py`
+- [scripts/train_pytorch_gcn.py](scripts/train_pytorch_gcn.py)
+- [src/fri/api/state.py](src/fri/api/state.py)
+- [src/fri/api/main.py](src/fri/api/main.py)
+- [src/fri/explainability/service.py](src/fri/explainability/service.py)
+- [scripts/run_explainability.py](scripts/run_explainability.py)
 
 Despite some legacy naming inherited from earlier GCN work, the active model and metrics identify the deployed architecture as `pytorch_hetero_gat`.
 
@@ -22,21 +22,21 @@ The training path is not a classical mini-batch neighbor-sampling pipeline in th
 
 ### Training Entry Point
 
-`scripts/train_pytorch_gcn.py` is the top-level execution script for the graph deep learning track.
+[scripts/train_pytorch_gcn.py](scripts/train_pytorch_gcn.py) is the top-level execution script for the graph deep learning track.
 
 It performs the following steps:
 
-1. load runtime settings from `configs/default.yaml`
+1. load runtime settings from [configs/default.yaml](configs/default.yaml)
 2. resolve the configured 20K archive path
 3. build a PyTorch Geometric heterogenous graph bundle from the archive
 4. resolve the training device
 5. call `train_pytorch_gcn(...)`
-6. persist the metrics to `artifacts/graph/pytorch_gcn_metrics.json`
-7. persist the trained checkpoint to `artifacts/graph/pytorch_hetero_gat_model.pt`
+6. persist the metrics to [artifacts/graph/pytorch_gcn_metrics.json](artifacts/graph/pytorch_gcn_metrics.json)
+7. persist the trained checkpoint to [artifacts/graph/pytorch_hetero_gat_model.pt](artifacts/graph/pytorch_hetero_gat_model.pt)
 
 ### Full-Batch Heterogenous Training
 
-The actual optimization logic is implemented in `train_pyg_minibatch(...)` inside `src/fri/models/pytorch_gnn.py`.
+The actual optimization logic is implemented in `train_pyg_minibatch(...)` inside [src/fri/models/pytorch_gnn.py](src/fri/models/pytorch_gnn.py).
 
 The function name is a historical artifact. In the current code path, the training loop explicitly discards loader-oriented arguments:
 
@@ -161,7 +161,7 @@ It then selects the threshold that yields the best validation F1.
 
 ### What Gets Persisted
 
-The training payload written to `artifacts/graph/pytorch_gcn_metrics.json` stores:
+The training payload written to [artifacts/graph/pytorch_gcn_metrics.json](artifacts/graph/pytorch_gcn_metrics.json) stores:
 
 - `optimal_threshold`
 - `decision_threshold`
@@ -184,7 +184,7 @@ In practice, this run converged back to a 0.50 operating point, but that was the
 
 ### Inference In The Serving Engine
 
-The inference logic used by the API lives in `EngineState.predict_account(...)` inside `src/fri/api/state.py`.
+The inference logic used by the API lives in `EngineState.predict_account(...)` inside [src/fri/api/state.py](src/fri/api/state.py).
 
 The supporting probability path is implemented in `EngineState.risk_probabilities()`.
 
@@ -231,7 +231,7 @@ This ensures the live API uses feature scaling consistent with the training assu
 
 ### Phase 9 Overview
 
-Phase 9 introduced a dedicated explainability layer implemented in `src/fri/explainability/service.py`.
+Phase 9 introduced a dedicated explainability layer implemented in [src/fri/explainability/service.py](src/fri/explainability/service.py).
 
 The repository does not treat explainability as a post-hoc dashboard-only concern. It exposes model introspection as a first-class service that can be called both offline and through the live API.
 
@@ -325,7 +325,7 @@ That combination gives the deployed system two distinct explanation modes:
 
 ### Offline Explainability Script
 
-`scripts/run_explainability.py` performs an end-to-end offline explanation workflow:
+[scripts/run_explainability.py](scripts/run_explainability.py) performs an end-to-end offline explanation workflow:
 
 1. rebuild the unified archive feature bundle
 2. reconstruct the heterogenous graph
@@ -333,7 +333,7 @@ That combination gives the deployed system two distinct explanation modes:
 4. run inference across all account nodes
 5. select the highest-risk account
 6. run the explainability service on that node
-7. write the explanation artifact to `artifacts/graph/account_explanation_sample.json`
+7. write the explanation artifact to [artifacts/graph/account_explanation_sample.json](artifacts/graph/account_explanation_sample.json)
 
 This script is useful because it proves that the explainability path is not coupled only to the API layer. It can also be used for validation, artifact generation, and analyst review.
 

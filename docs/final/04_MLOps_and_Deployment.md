@@ -22,7 +22,7 @@ The result is a single deployable unit that can score risk, explain decisions, m
 
 ### Docker Image Design
 
-The runtime image is defined by `Dockerfile` and built from:
+The runtime image is defined by [Dockerfile](Dockerfile) and built from:
 
 - `python:3.11-slim`
 
@@ -50,7 +50,7 @@ That choice is operationally important because it avoids pulling unnecessary CUD
 
 ### Runtime Dependencies
 
-The image installs a pinned `requirements.txt`, which includes the serving and monitoring stack used by the live API:
+The image installs a pinned [requirements.txt](requirements.txt), which includes the serving and monitoring stack used by the live API:
 
 - FastAPI
 - Uvicorn
@@ -71,10 +71,10 @@ This dependency pinning matters because it stabilizes inference, explanation, an
 
 The Docker image copies:
 
-- `src/`
-- `configs/`
-- `data/`
-- `artifacts/`
+- [src/](src/)
+- [configs/](configs/)
+- [data/](data/)
+- [artifacts/](artifacts/)
 
 This means the container is self-contained with respect to:
 
@@ -97,7 +97,7 @@ This distinguishes process existence from real application readiness. In this re
 
 ### Compose Topology
 
-`docker-compose.yml` defines one service:
+[docker-compose.yml](docker-compose.yml) defines one service:
 
 - `fri-api-engine`
 
@@ -114,7 +114,7 @@ This is intentionally simple. The current system is not deployed as a multi-cont
 
 The artifact bind mount is a critical operational design decision.
 
-Because `./artifacts` is mounted into `/app/artifacts`, runtime outputs generated inside the container are written back to the host. That includes:
+Because [artifacts/](artifacts/) is mounted as a container volume, runtime outputs generated inside the container are written back to the host. That includes:
 
 - trained model artifacts already present in the repository
 - explainability outputs
@@ -152,7 +152,7 @@ The response returns:
 
 ### Statistical Logic
 
-The drift analysis implementation lives in `src/fri/temporal/drift.py`.
+The drift analysis implementation lives in [src/fri/temporal/drift.py](src/fri/temporal/drift.py).
 
 The active online path uses `compute_distribution_drift_report(...)`, which:
 
@@ -188,11 +188,11 @@ That signal can be used to:
 
 ### JSONL Event Store
 
-Persistent drift monitoring is implemented in `src/fri/api/monitoring.py`.
+Persistent drift monitoring is implemented in [src/fri/api/monitoring.py](src/fri/api/monitoring.py).
 
 Every successful drift analysis appends a JSONL record to:
 
-- `artifacts/temporal/drift_events.jsonl`
+- [artifacts/temporal/drift_events.jsonl](artifacts/temporal/drift_events.jsonl)
 
 Each event includes:
 
@@ -203,7 +203,7 @@ Each event includes:
 - request sample size
 - analyzed feature count
 
-Because the `artifacts/` directory is volume-mounted by Docker Compose, these drift events persist on the host even when the container is restarted or rebuilt.
+Because the [artifacts/](artifacts/) directory is volume-mounted by Docker Compose, these drift events persist on the host even when the container is restarted or rebuilt.
 
 ### Why This Matters
 
