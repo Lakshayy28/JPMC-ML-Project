@@ -1,0 +1,8 @@
+.venv/
+__pycache__/
+*.pyc
+
+data/external/AMLSim/
+
+artifacts/graph/archive_node_features.csv
+artifacts/graph/archive_node_embeddings.csv
