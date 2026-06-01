@@ -1,6 +1,14 @@
+fastapi>=0.115
+networkx>=3.3
 pandas>=2.2
+pydantic>=2.8
+prometheus-client>=0.22
 PyYAML>=6.0
 scikit-learn>=1.5
+torch>=2.8
+torch-geometric>=2.7
+uvicorn>=0.30
 
 [dev]
+httpx>=0.27
 pytest>=8.2

@@ -4,7 +4,7 @@ export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localho
 
 const client = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 60000,
+  timeout: 20000,
   headers: {
     "Content-Type": "application/json",
   },
@@ -29,8 +29,11 @@ export async function getPrediction(accountId) {
   return response.data;
 }
 
-export async function getExplanation(accountId) {
-  const response = await client.get(`/explain/${encodeURIComponent(accountId)}`);
+export async function getExplanation(accountId, epochs = 12) {
+  const response = await client.get(`/explain/${encodeURIComponent(accountId)}`, {
+    params: { epochs },
+    timeout: 45000,
+  });
   return response.data;
 }
 

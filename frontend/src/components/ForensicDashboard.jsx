@@ -370,6 +370,7 @@ export default function ForensicDashboard() {
   const [investigationError, setInvestigationError] = useState("");
   const [opsError, setOpsError] = useState("");
   const [isInvestigating, setIsInvestigating] = useState(false);
+  const [isExplaining, setIsExplaining] = useState(false);
   const [isRefreshingOps, setIsRefreshingOps] = useState(false);
 
   const criticalTransactions = explanation?.critical_transactions ?? [];
@@ -400,22 +401,30 @@ export default function ForensicDashboard() {
 
     setAccountId(normalizedAccountId);
     setIsInvestigating(true);
+    setIsExplaining(false);
     setInvestigationError("");
+    setExplanation(null);
 
     try {
-      const [predictionPayload, explanationPayload] = await Promise.all([
-        getPrediction(normalizedAccountId),
-        getExplanation(normalizedAccountId),
-      ]);
+      const predictionPayload = await getPrediction(normalizedAccountId);
 
       setPrediction(predictionPayload);
-      setExplanation(explanationPayload);
       setAlertQueue((current) => {
         const merged = current.filter((account) => String(account.account_id) !== String(predictionPayload.account_id));
         return [predictionPayload, ...merged]
           .sort((a, b) => b.fraud_probability - a.fraud_probability)
           .slice(0, 8);
       });
+
+      setIsExplaining(true);
+      try {
+        const explanationPayload = await getExplanation(normalizedAccountId);
+        setExplanation(explanationPayload);
+      } catch (error) {
+        setInvestigationError(`Prediction returned, but explanation failed: ${getApiErrorMessage(error)}`);
+      } finally {
+        setIsExplaining(false);
+      }
     } catch (error) {
       setPrediction(null);
       setExplanation(null);
@@ -587,7 +596,7 @@ export default function ForensicDashboard() {
                     <p className="text-sm font-semibold uppercase text-slate-500">GNNExplainer</p>
                     <h2 className="mt-1 text-xl font-bold text-slate-950">Top Feature Weights</h2>
                   </div>
-                  {isInvestigating ? <StatusPill label="Loading" tone="info" icon={Loader2} /> : null}
+                  {isInvestigating || isExplaining ? <StatusPill label="Loading" tone="info" icon={Loader2} /> : null}
                 </div>
                 <FeatureChart topFeatures={explanation?.top_features} />
               </div>

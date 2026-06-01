@@ -4,10 +4,18 @@ Version: 0.1.0
 Summary: Financial Risk Intelligence platform scaffold built on IBM AMLSim.
 Requires-Python: >=3.10
 Description-Content-Type: text/markdown
+Requires-Dist: fastapi>=0.115
+Requires-Dist: networkx>=3.3
 Requires-Dist: pandas>=2.2
+Requires-Dist: pydantic>=2.8
+Requires-Dist: prometheus-client>=0.22
 Requires-Dist: PyYAML>=6.0
 Requires-Dist: scikit-learn>=1.5
+Requires-Dist: torch>=2.8
+Requires-Dist: torch-geometric>=2.7
+Requires-Dist: uvicorn>=0.30
 Provides-Extra: dev
+Requires-Dist: httpx>=0.27; extra == "dev"
 Requires-Dist: pytest>=8.2; extra == "dev"
 
 # Financial Risk Intelligence Documentation Roadmap

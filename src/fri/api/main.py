@@ -3,7 +3,7 @@ from __future__ import annotations
 from contextlib import asynccontextmanager
 from typing import Any
 
-from fastapi import FastAPI, HTTPException, Response
+from fastapi import FastAPI, HTTPException, Query, Response
 from fastapi.middleware.cors import CORSMiddleware
 
 from fri.api import monitoring as api_monitoring
@@ -21,7 +21,12 @@ app = FastAPI(title="FRI Risk Engine", version="0.1.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:5173",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -50,10 +55,13 @@ def predict(account_id: int) -> schemas.RiskPredictionResponse:
 
 
 @app.get("/explain/{account_id}", response_model=schemas.ExplanationResponse)
-def explain(account_id: int) -> schemas.ExplanationResponse:
+def explain(
+    account_id: int,
+    epochs: int = Query(default=12, ge=1, le=50, description="GNNExplainer optimization epochs."),
+) -> schemas.ExplanationResponse:
     engine = api_state.get_engine_state()
     try:
-        report = engine.explain_account(account_id, epochs=50)
+        report = engine.explain_account(account_id, epochs=epochs)
     except KeyError as exc:
         raise HTTPException(status_code=404, detail=f"Account id {account_id} was not found in the graph") from exc
     return schemas.ExplanationResponse(

@@ -97,7 +97,11 @@ def test_api_routes_return_expected_payloads(monkeypatch: pytest.MonkeyPatch) ->
         assert explanation_response.status_code == 200
         assert explanation_response.json()["account_id"] == 19204
         assert "incoming_amount_velocity_1d" in explanation_response.json()["top_features"]
-        assert fake_state.explain_calls == [(19204, 50)]
+        assert fake_state.explain_calls == [(19204, 12)]
+
+        tuned_explanation_response = client.get("/explain/19204?epochs=25")
+        assert tuned_explanation_response.status_code == 200
+        assert fake_state.explain_calls[-1] == (19204, 25)
 
         drift_response = client.post(
             "/analyze-drift",

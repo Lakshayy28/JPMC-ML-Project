@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
@@ -24,6 +25,9 @@ from fri.models.pytorch_gnn import (
 from fri.temporal.drift import compute_distribution_drift_report, select_distribution_feature_columns
 
 
+LOGGER = logging.getLogger(__name__)
+
+
 @dataclass(frozen=True)
 class PredictionResult:
     account_id: int
@@ -43,14 +47,18 @@ class DriftAnalysisResult:
 
 class EngineState:
     def __init__(self, settings: Settings | None = None) -> None:
+        LOGGER.info("Initializing FRI engine state")
         self.settings = settings or load_settings()
         self.device = resolve_training_device(
             use_cuda=self.settings.hardware.use_cuda,
             requested_device=self.settings.hardware.device,
         )
+        LOGGER.info("Resolved inference device: %s", self.device)
         self.metrics = self._load_metrics(self.settings.graph.output_root / "pytorch_gcn_metrics.json")
         archive_path = self.settings.dataset.graph_archive or self.settings.graph.archive_sample
+        LOGGER.info("Loading archive graph data from %s", archive_path)
         archive_data = load_archive_graph_data(archive_path)
+        LOGGER.info("Building graph feature bundle")
         self.feature_bundle = build_graph_feature_bundle(
             nodes=archive_data.nodes,
             transactions=archive_data.transactions,
@@ -61,9 +69,11 @@ class EngineState:
             community_seed=self.settings.graph.community_seed,
             embedding_dimensions=self.settings.graph.embedding_dimensions,
             embedding_random_state=self.settings.models.random_state,
-            include_embeddings=True,
+            include_embeddings=False,
         )
+        LOGGER.info("Building PyG heterogenous graph")
         self.graph_bundle = build_pyg_graph_data_from_feature_bundle(self.feature_bundle)
+        LOGGER.info("Preparing inference tensors")
         self.data = prepare_hetero_inference_data(
             self.graph_bundle.data,
             random_state=self.settings.models.random_state,
@@ -72,6 +82,7 @@ class EngineState:
             pin_memory=self.settings.hardware.pin_memory,
         )
         checkpoint_path = self._resolve_checkpoint_path()
+        LOGGER.info("Loading trained Hetero GAT checkpoint from %s", checkpoint_path)
         self.model, self.checkpoint_payload = load_trained_hetero_gat_model(
             self.data,
             checkpoint_path,
@@ -91,6 +102,7 @@ class EngineState:
         self.drift_baseline_frame = self._drift_baseline_frame(self.feature_bundle)
         self.drift_feature_columns = select_distribution_feature_columns(self.drift_baseline_frame)
         self.drift_monitor = DriftMonitor(self.settings.graph.output_root.parent / "temporal" / "drift_events.jsonl")
+        LOGGER.info("Initializing explainer service")
         self.explainer = HeteroGraphExplainerService(
             self.model,
             feature_columns=[str(value) for value in self.metrics.get("feature_columns", [])],
@@ -98,6 +110,7 @@ class EngineState:
             merchant_node_ids=self.merchant_node_ids,
             raw_edge_records=self._raw_edge_records(self.feature_bundle),
         )
+        LOGGER.info("FRI engine state initialized")
 
     @staticmethod
     def _load_metrics(metrics_path: Path) -> dict[str, Any]:
