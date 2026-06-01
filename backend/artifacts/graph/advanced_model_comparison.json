@@ -1,0 +1,50 @@
+[
+  {
+    "model_name": "Baseline GAT",
+    "precision": 0.7319,
+    "recall": 0.6962,
+    "f1": 0.7136,
+    "average_precision": 0.7417,
+    "roc_auc": 0.9186,
+    "best_epoch": 120
+  },
+  {
+    "model_name": "PNA",
+    "precision": 0.7822222222222223,
+    "recall": 0.7804878048780488,
+    "f1": 0.781354051054384,
+    "average_precision": 0.8475069128029822,
+    "roc_auc": 0.9537419349492763,
+    "best_epoch": 110,
+    "best_val_f1": 0.7868852459016393,
+    "best_val_ap": 0.8424528848641678,
+    "optimal_threshold": 0.75,
+    "train_time": 200.12073802947998
+  },
+  {
+    "model_name": "GraphMAE+GAT",
+    "precision": 0.5705263157894737,
+    "recall": 0.6008869179600886,
+    "f1": 0.5853131749460043,
+    "average_precision": 0.5995954331475072,
+    "roc_auc": 0.9016191760670578,
+    "best_epoch": 120,
+    "best_val_f1": 0.5814977973568282,
+    "best_val_ap": 0.5412274710934375,
+    "optimal_threshold": 0.49999999999999994,
+    "train_time": 169.56676316261292
+  },
+  {
+    "model_name": "Focal Loss GAT",
+    "precision": 0.7350649350649351,
+    "recall": 0.6274944567627494,
+    "f1": 0.6770334928229665,
+    "average_precision": 0.7155605199502594,
+    "roc_auc": 0.9162448412189711,
+    "best_epoch": 79,
+    "best_val_f1": 0.679658952496955,
+    "best_val_ap": 0.6875887357515025,
+    "optimal_threshold": 0.7,
+    "train_time": 128.03417921066284
+  }
+]
