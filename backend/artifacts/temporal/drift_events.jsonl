@@ -15,3 +15,5 @@
 {"analyzed_feature_count": 2, "drift_detected": true, "drift_score": 1.0, "drifted_features": ["outgoing_tx_velocity_30d"], "sample_size": 1, "timestamp": "2026-06-01T07:53:17.576027+00:00"}
 {"analyzed_feature_count": 2, "drift_detected": true, "drift_score": 1.0, "drifted_features": ["outgoing_tx_velocity_30d"], "sample_size": 2, "timestamp": "2026-06-01T07:54:50.364414+00:00"}
 {"analyzed_feature_count": 2, "drift_detected": true, "drift_score": 1.0, "drifted_features": ["outgoing_tx_velocity_30d", "total_amount"], "sample_size": 6, "timestamp": "2026-06-01T07:56:19.552925+00:00"}
+{"analyzed_feature_count": 2, "drift_detected": true, "drift_score": 1.0, "drifted_features": ["outgoing_tx_velocity_30d", "total_amount"], "sample_size": 6, "timestamp": "2026-06-01T08:00:00.888951+00:00"}
+{"analyzed_feature_count": 2, "drift_detected": true, "drift_score": 1.0, "drifted_features": ["outgoing_tx_velocity_30d", "total_amount"], "sample_size": 6, "timestamp": "2026-06-01T09:30:55.349061+00:00"}
