@@ -12,7 +12,7 @@ services:
 
   fri-frontend:
     build:
-      context: ./frontend
+      context: ../frontend
       dockerfile: Dockerfile
     container_name: fri-frontend
     ports:

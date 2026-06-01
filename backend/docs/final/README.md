@@ -2,9 +2,11 @@
 
 ## Purpose
 
-Welcome to the definitive suite of system documentation for the Financial Risk Intelligence platform. 
+Welcome to the definitive suite of system documentation for the Financial Risk Intelligence platform.
 
-This repository has successfully evolved from a basic data science sandbox into a production-grade, containerized microservice ecosystem utilizing a Heterogeneous Graph Attention Network (Hetero GAT). This documentation is designed to serve as an authoritative, audit-ready guide for JPMC ML project engineers, reviewers, model validation teams, and operational MLOps auditors.
+The codebase is split into **`backend/`** (this tree: API, ML, data, Docker) and **`frontend/`** (React dashboard at the repository root). Paths in the documents below are relative to `backend/` unless noted otherwise.
+
+This project has evolved from a basic data science sandbox into a production-grade, containerized microservice ecosystem utilizing a Heterogeneous Graph Attention Network (Hetero GAT). This documentation is designed to serve as an authoritative, audit-ready guide for JPMC ML project engineers, reviewers, model validation teams, and operational MLOps auditors.
 
 Each section is designed to stand on its own while contributing to a coherent, end-to-end understanding of the platform's lifecycle from raw AMLSim source data to live, explainable, and monitored containerized inference.
 

@@ -27,12 +27,12 @@ That problem has effectively been removed here.
 
 The current training entrypoints show that all major tracks now begin from the same 20K AMLSim archive:
 
-- [scripts/train_baseline.py](scripts/train_baseline.py)
-- [scripts/train_graph_baseline.py](scripts/train_graph_baseline.py)
-- [scripts/train_graph_embedding_baseline.py](scripts/train_graph_embedding_baseline.py)
-- [scripts/train_pytorch_gcn.py](scripts/train_pytorch_gcn.py)
+- [scripts/train_baseline.py](../../scripts/train_baseline.py)
+- [scripts/train_graph_baseline.py](../../scripts/train_graph_baseline.py)
+- [scripts/train_graph_embedding_baseline.py](../../scripts/train_graph_embedding_baseline.py)
+- [scripts/train_pytorch_gcn.py](../../scripts/train_pytorch_gcn.py)
 
-Each of those scripts loads the same archive source from configuration and routes through the same archive feature-construction logic in [src/fri/graph/service.py](src/fri/graph/service.py).
+Each of those scripts loads the same archive source from configuration and routes through the same archive feature-construction logic in [src/fri/graph/service.py](../../src/fri/graph/service.py).
 
 ### What Was Unified
 
@@ -61,7 +61,7 @@ For an enterprise engineering team or model-risk auditor, this is a much more de
 
 ### Unified Archive Feature Bundle
 
-[src/fri/graph/service.py](src/fri/graph/service.py) is the main feature-engineering surface for the deployed modeling stack.
+[src/fri/graph/service.py](../../src/fri/graph/service.py) is the main feature-engineering surface for the deployed modeling stack.
 
 Its `build_archive_feature_bundle(...)` function constructs a shared package containing:
 
@@ -135,7 +135,7 @@ This is where the system moves beyond conventional tabular fraud scoring into ex
 
 The 20K AMLSim archive does not expose native merchant entities directly in the way a payments platform might.
 
-To support a heterogenous graph, [src/fri/graph/service.py](src/fri/graph/service.py) derives merchant proxies through `_derive_archive_merchants(...)`.
+To support a heterogenous graph, [src/fri/graph/service.py](../../src/fri/graph/service.py) derives merchant proxies through `_derive_archive_merchants(...)`.
 
 That process creates:
 
@@ -165,7 +165,7 @@ That makes the experimental ladder more informative because it separates structu
 
 ### Shared Baseline Estimators
 
-The core tabular estimator logic lives in [src/fri/models/baseline.py](src/fri/models/baseline.py).
+The core tabular estimator logic lives in [src/fri/models/baseline.py](../../src/fri/models/baseline.py).
 
 All baseline tracks use the same estimator pair:
 
@@ -181,7 +181,7 @@ This shared baseline framework ensures the classical model comparisons are consi
 
 ### Archive Account Tabular Baselines
 
-[scripts/train_baseline.py](scripts/train_baseline.py) trains the archive account tabular baseline.
+[scripts/train_baseline.py](../../scripts/train_baseline.py) trains the archive account tabular baseline.
 
 The important detail is that it no longer trains on a disconnected processed-table sandbox. It uses the archive-derived `tabular_account_features` frame, converts `is_fraud` into the training label, and evaluates the baseline estimators on that unified account-level feature space.
 
@@ -189,7 +189,7 @@ This is the direct resolution of the earlier tabular mismatch issue.
 
 ### Graph Classical Baselines
 
-[scripts/train_graph_baseline.py](scripts/train_graph_baseline.py) uses [src/fri/models/graph_baseline.py](src/fri/models/graph_baseline.py) to train classical estimators on archive-derived graph node features.
+[scripts/train_graph_baseline.py](../../scripts/train_graph_baseline.py) uses [src/fri/models/graph_baseline.py](../../src/fri/models/graph_baseline.py) to train classical estimators on archive-derived graph node features.
 
 The model family is still Logistic Regression plus Random Forest, but the input space now contains graph-structural variables merged with temporal account features.
 
@@ -200,7 +200,7 @@ This creates a fair comparison between:
 
 ### Embedding-Only And Combined Baselines
 
-[src/fri/models/graph_embedding.py](src/fri/models/graph_embedding.py) defines two additional baseline views:
+[src/fri/models/graph_embedding.py](../../src/fri/models/graph_embedding.py) defines two additional baseline views:
 
 - `embedding_only`
 - `combined_graph_features_and_embeddings`
@@ -216,14 +216,14 @@ This is a useful experimental bridge between hand-engineered graph summaries and
 
 ### Model Identity
 
-The deployed deep learning model is implemented as `SpatialTemporalHeteroGAT` in [src/fri/models/pytorch_gnn.py](src/fri/models/pytorch_gnn.py).
+The deployed deep learning model is implemented as `SpatialTemporalHeteroGAT` in [src/fri/models/pytorch_gnn.py](../../src/fri/models/pytorch_gnn.py).
 
 The active checkpoint is recorded in the metrics artifact as:
 
 - `model_name: pytorch_hetero_gat`
-- checkpoint file: [artifacts/graph/pytorch_hetero_gat_model.pt](artifacts/graph/pytorch_hetero_gat_model.pt)
+- checkpoint file: [artifacts/graph/pytorch_hetero_gat_model.pt](../../artifacts/graph/pytorch_hetero_gat_model.pt)
 
-One important repository nuance is that some filenames retain legacy `pytorch_gcn` naming, including [scripts/train_pytorch_gcn.py](scripts/train_pytorch_gcn.py) and [artifacts/graph/pytorch_gcn_metrics.json](artifacts/graph/pytorch_gcn_metrics.json). Despite that legacy naming, the actual loaded model metadata identifies the deployed architecture as `pytorch_hetero_gat`.
+One important repository nuance is that some filenames retain legacy `pytorch_gcn` naming, including [scripts/train_pytorch_gcn.py](../../scripts/train_pytorch_gcn.py) and [artifacts/graph/pytorch_gcn_metrics.json](../../artifacts/graph/pytorch_gcn_metrics.json). Despite that legacy naming, the actual loaded model metadata identifies the deployed architecture as `pytorch_hetero_gat`.
 
 ### Graph Representation
 

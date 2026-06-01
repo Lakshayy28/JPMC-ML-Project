@@ -23,13 +23,13 @@ The active deployment shape is a single containerized API service named `fri-api
 
 The serving boundary is defined by the following repository surfaces:
 
-- [Dockerfile](Dockerfile)
-- [docker-compose.yml](docker-compose.yml)
-- [configs/default.yaml](configs/default.yaml)
-- [src/fri/api/](src/fri/api/)
-- [src/fri/graph/](src/fri/graph/)
-- [src/fri/models/pytorch_gnn.py](src/fri/models/pytorch_gnn.py)
-- [src/fri/temporal/drift.py](src/fri/temporal/drift.py)
+- [Dockerfile](../../Dockerfile)
+- [docker-compose.yml](../../docker-compose.yml)
+- [configs/default.yaml](../../configs/default.yaml)
+- [src/fri/api/](../../src/fri/api/)
+- [src/fri/graph/](../../src/fri/graph/)
+- [src/fri/models/pytorch_gnn.py](../../src/fri/models/pytorch_gnn.py)
+- [src/fri/temporal/drift.py](../../src/fri/temporal/drift.py)
 
 Those components together form a production-style runtime that packages the trained model, the archive-derived feature pipeline, the API contract, and the MLOps monitoring layer into one deployable unit.
 
@@ -37,10 +37,10 @@ Those components together form a production-style runtime that packages the trai
 
 ### Docker Compose Layer
 
-[docker-compose.yml](docker-compose.yml) defines one network-facing service:
+[docker-compose.yml](../../docker-compose.yml) defines one network-facing service:
 
 - service name: `fri-api-engine`
-- build context: repository root
+- build context: `backend/` directory
 - published port: `8000:8000`
 - bind mount: `./artifacts:/app/artifacts`
 - restart policy: `unless-stopped`
@@ -49,7 +49,7 @@ This means the current production boundary is intentionally simple: one API cont
 
 ### Container Runtime Layer
 
-[Dockerfile](Dockerfile) builds the service on top of `python:3.11-slim` and sets:
+[Dockerfile](../../Dockerfile) builds the service on top of `python:3.11-slim` and sets:
 
 - `PYTHONDONTWRITEBYTECODE=1`
 - `PYTHONUNBUFFERED=1`
@@ -57,10 +57,10 @@ This means the current production boundary is intentionally simple: one API cont
 
 It installs the CPU-oriented PyTorch runtime, installs the pinned serving dependencies, and copies:
 
-- [src/](src/)
-- [configs/](configs/)
-- [data/](data/)
-- [artifacts/](artifacts/)
+- [src/](../../src/)
+- [configs/](../../configs/)
+- [data/](../../data/)
+- [artifacts/](../../artifacts/)
 
 The image exposes port `8000` and starts the API with:
 
@@ -76,17 +76,17 @@ The end-to-end system flow is anchored on a unified archive-to-graph-to-inferenc
 
 ### 1. Unified 20K AMLSim Archive
 
-The serving engine loads the archive configured in [configs/default.yaml](configs/default.yaml):
+The serving engine loads the archive configured in [configs/default.yaml](../../configs/default.yaml):
 
-- [data/external/AMLSim/sample/20K_fanin200cycle200.tgz](data/external/AMLSim/sample/20K_fanin200cycle200.tgz)
+- [data/external/AMLSim/sample/20K_fanin200cycle200.tgz](../../data/external/AMLSim/sample/20K_fanin200cycle200.tgz)
 
-[src/fri/graph/io.py](src/fri/graph/io.py) extracts the metadata, nodes, and transaction files.
+[src/fri/graph/io.py](../../src/fri/graph/io.py) extracts the metadata, nodes, and transaction files.
 
 This archive is the canonical runtime data source for the current model-serving path.
 
 ### 2. Feature Engineering Layer
 
-[src/fri/graph/service.py](src/fri/graph/service.py) builds a unified feature bundle directly from the archive tables.
+[src/fri/graph/service.py](../../src/fri/graph/service.py) builds a unified feature bundle directly from the archive tables.
 
 That bundle includes:
 
@@ -101,7 +101,7 @@ This feature bundle is deliberately shared across the broader modeling stack so 
 
 ### 3. PyTorch Geometric Graph Layer
 
-[src/fri/models/pytorch_gnn.py](src/fri/models/pytorch_gnn.py) converts the feature bundle into a `HeteroData` graph with two node types:
+[src/fri/models/pytorch_gnn.py](../../src/fri/models/pytorch_gnn.py) converts the feature bundle into a `HeteroData` graph with two node types:
 
 - `account`
 - `merchant`
@@ -122,19 +122,19 @@ This makes the deployed inference graph explicitly spatial-temporal and heteroge
 
 ### 4. Model Layer
 
-The serving model is `SpatialTemporalHeteroGAT`, implemented in [src/fri/models/pytorch_gnn.py](src/fri/models/pytorch_gnn.py).
+The serving model is `SpatialTemporalHeteroGAT`, implemented in [src/fri/models/pytorch_gnn.py](../../src/fri/models/pytorch_gnn.py).
 
 The engine reconstructs that model from:
 
 - the heterogenous graph shape
-- the graph metrics artifact at [artifacts/graph/pytorch_gcn_metrics.json](artifacts/graph/pytorch_gcn_metrics.json)
-- the trained checkpoint file under the [artifacts/graph/](artifacts/graph/) directory.
+- the graph metrics artifact at [artifacts/graph/pytorch_gcn_metrics.json](../../artifacts/graph/pytorch_gcn_metrics.json)
+- the trained checkpoint file under the [artifacts/graph/](../../artifacts/graph/) directory.
 
 The model is loaded once during application startup and then held in memory for all subsequent requests.
 
 ### 5. API Layer
 
-[src/fri/api/main.py](src/fri/api/main.py) exposes the serving contract:
+[src/fri/api/main.py](../../src/fri/api/main.py) exposes the serving contract:
 
 - `GET /health`
 - `GET /predict/{account_id}`
@@ -150,7 +150,7 @@ The operational monitoring layer currently includes:
 
 - baseline feature-distribution storage in memory
 - KS-based drift analysis over incoming payloads
-- persistent JSONL drift event logging under [artifacts/temporal/drift_events.jsonl](artifacts/temporal/drift_events.jsonl)
+- persistent JSONL drift event logging under [artifacts/temporal/drift_events.jsonl](../../artifacts/temporal/drift_events.jsonl)
 - Prometheus-style metrics export via `GET /metrics`
 
 This means the serving plane and monitoring plane are currently co-located inside the same containerized service.
@@ -245,7 +245,7 @@ For `POST /analyze-drift`:
 2. `EngineState.analyze_drift()` converts the payload into a frame.
 3. The payload is compared against the stored baseline account-feature frame using KS-based distribution checks.
 4. A drift result is produced.
-5. The event is persisted to [artifacts/temporal/drift_events.jsonl](artifacts/temporal/drift_events.jsonl).
+5. The event is persisted to [artifacts/temporal/drift_events.jsonl](../../artifacts/temporal/drift_events.jsonl).
 6. Prometheus counters, gauges, and latency metrics are updated.
 7. A structured drift report is returned.
 

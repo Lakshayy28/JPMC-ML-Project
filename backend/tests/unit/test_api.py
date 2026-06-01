@@ -173,7 +173,7 @@ def test_engine_state_resolves_checkpoint_path_portably(tmp_path: Path) -> None:
 
     engine = api_state.EngineState.__new__(api_state.EngineState)
     engine.metrics = {
-        "checkpoint_path": "/Users/lakshaychandra/JPMC ML Project/artifacts/graph/pytorch_hetero_gat_model.pt"
+        "checkpoint_path": "/legacy/host/path/artifacts/graph/pytorch_hetero_gat_model.pt"
     }
     engine.settings = type(
         "_Settings",
